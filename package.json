@@ -1,0 +1,12 @@
+{
+  "name": "world-news-platform-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Root scripts for World News Platform (FastAPI + React)",
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build:frontend": "npm --prefix frontend run build",
+    "backend": "cd backend && python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload"
+  }
+}
