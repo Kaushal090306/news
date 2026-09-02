@@ -87,34 +87,48 @@ export function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // Fetch feeds whenever category, search, date, or country changes
+  // Fetch feeds whenever search, date, or country changes
   useEffect(() => {
-    loadFeedData();
-  }, [activeCategory, searchQuery, selectedDate, selectedCountry]);
+    loadFeedData(true);
+  }, [searchQuery, selectedDate, selectedCountry]);
 
-  const loadFeedData = async () => {
-    setLoading(true);
+  // When activeCategory changes, refresh silently in background (0ms instant UI update)
+  useEffect(() => {
+    loadFeedData(false);
+  }, [activeCategory]);
+
+  const loadFeedData = async (isInitialOrMajorChange = false) => {
+    if (isInitialOrMajorChange && stories.length === 0) {
+      setLoading(true);
+    }
     try {
       const dateParam = selectedDate !== 'all' ? selectedDate : undefined;
       const countryParam = selectedCountry !== 'all' ? selectedCountry : undefined;
 
       const [storiesRes, heroRes, breakingRes, catRes] = await Promise.all([
         api.getStories({
-          category: activeCategory !== 'all' ? activeCategory : undefined,
           country: countryParam,
           search: searchQuery || undefined,
           date: dateParam,
-          limit: 150
+          limit: 250
         }),
-        api.getHeroStory(activeCategory),
+        api.getHeroStory(activeCategory !== 'all' ? activeCategory : undefined),
         api.getBreakingNews(),
         api.getStoriesByCategory(dateParam, countryParam)
       ]);
 
-      setStories(storiesRes.stories || []);
-      setHeroStory(heroRes.story || (storiesRes.stories && storiesRes.stories[0]) || null);
-      setBreakingStories(breakingRes.breaking || []);
-      setCategoryStories(catRes.categories || {});
+      if (storiesRes && storiesRes.stories) {
+        setStories(storiesRes.stories);
+      }
+      if (heroRes && heroRes.story) {
+        setHeroStory(heroRes.story);
+      }
+      if (breakingRes && breakingRes.breaking) {
+        setBreakingStories(breakingRes.breaking);
+      }
+      if (catRes && catRes.categories) {
+        setCategoryStories(catRes.categories);
+      }
     } catch (err) {
       console.error('Failed to load feed data:', err);
     } finally {
