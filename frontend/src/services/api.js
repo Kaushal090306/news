@@ -1,4 +1,4 @@
-const API_BASE = '/api';
+const API_BASE = (import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://news-ymtr.onrender.com/api' : '/api')).replace(/\/$/, '');
 
 export const getAuthToken = () => localStorage.getItem('world_news_token');
 export const setAuthToken = (token) => localStorage.setItem('world_news_token', token);
