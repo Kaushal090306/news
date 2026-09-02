@@ -1,11 +1,115 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Play,
+  Headphones,
+  TrendingUp,
+  Film,
+  Globe,
+  Activity,
+  Cpu,
+  Compass,
+  BookOpen,
+  Radio,
+  Sparkles,
+  Flame
+} from 'lucide-react';
 
-const DEFAULT_NEWS_IMAGE = "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=1200&auto=format&fit=crop&q=80";
+const DEFAULT_NEWS_IMAGE = "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=1600&auto=format&fit=crop&q=90";
 
-// Format clean full date & time (e.g. "30 AUG 2026, 12:30 AM")
+export const getHdImageUrl = (url) => {
+  if (!url) return '';
+  let hdUrl = url.trim();
+
+  // 1. BBC: upgrade /standard/240/ or /news/240/ to /standard/1024/
+  if (hdUrl.includes('ichef.bbci.co.uk')) {
+    hdUrl = hdUrl.replace(/\/(standard|ws|news|wwhp)\/\d+\//, '/$1/1024/');
+  }
+  // 2. France 24: upgrade /w:1024/ or /w:320/ to /w:1920/
+  else if (hdUrl.includes('france24.com')) {
+    hdUrl = hdUrl.replace(/\/w:\d+\//, '/w:1920/');
+  }
+  // 3. NDTV: high resolution resize
+  else if (hdUrl.includes('ndtvimg.com')) {
+    if (hdUrl.includes('?im=')) {
+      hdUrl = hdUrl.replace(/width=\d+,height=\d+/, 'width=1280,height=720').replace(/width=\d+/, 'width=1280');
+    } else {
+      hdUrl = `${hdUrl}?im=Resize,width=1280`;
+    }
+  }
+  // 4. Times of India / Economic Times: upscale dimensions
+  else if (hdUrl.includes('toiimg.com') || hdUrl.includes('etimg.com')) {
+    if (hdUrl.includes('width-')) {
+      hdUrl = hdUrl.replace(/width-\d+,height-\d+/, 'width-1200,height-900').replace(/width-\d+/, 'width-1200');
+    }
+  }
+  // 5. CNN: upgrade from crops to super-169
+  else if (hdUrl.includes('cnn.com')) {
+    hdUrl = hdUrl.replace(/-(medium|small|large|exlarge|hp-video|story-body|t1-main|large-11)(-\d+)?\.jpg/, '-super-169.jpg');
+    hdUrl = hdUrl.replace('medium-169', 'super-169').replace('small-169', 'super-169').replace('exlarge-169', 'super-169');
+  }
+  // 6. WordPress / TechCrunch / Variety / Ars Technica / The Verge
+  else if (['techcrunch.com', 'variety.com', 'wp.com', 'arstechnica.net', 'theverge.com'].some(d => hdUrl.includes(d))) {
+    hdUrl = hdUrl.replace(/-\d+x\d+(\.(jpg|jpeg|png|webp|avif))/i, '$1');
+  }
+  // 7. Unsplash: 1600px width with 90% quality
+  else if (hdUrl.includes('images.unsplash.com')) {
+    hdUrl = hdUrl.replace(/w=\d+/, 'w=1600').replace(/q=\d+/, 'q=90');
+  }
+
+  return hdUrl;
+};
+
+export const getCategoryFallbackImage = (category, index = 0) => {
+  const cat = (category || '').toLowerCase();
+  const fallbacks = {
+    technology: [
+      'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1600&auto=format&fit=crop&q=90',
+      'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1600&auto=format&fit=crop&q=90',
+      'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=1600&auto=format&fit=crop&q=90'
+    ],
+    business: [
+      'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1600&auto=format&fit=crop&q=90',
+      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1600&auto=format&fit=crop&q=90',
+      'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=1600&auto=format&fit=crop&q=90'
+    ],
+    sport: [
+      'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=1600&auto=format&fit=crop&q=90',
+      'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=1600&auto=format&fit=crop&q=90',
+      'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=1600&auto=format&fit=crop&q=90'
+    ],
+    culture: [
+      'https://images.unsplash.com/photo-1499364615650-ec38552f4f34?w=1600&auto=format&fit=crop&q=90',
+      'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=1600&auto=format&fit=crop&q=90',
+      'https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=1600&auto=format&fit=crop&q=90'
+    ],
+    science: [
+      'https://images.unsplash.com/photo-1507668077129-56e32842fceb?w=1600&auto=format&fit=crop&q=90',
+      'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1600&auto=format&fit=crop&q=90',
+      'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=1600&auto=format&fit=crop&q=90'
+    ],
+    health: [
+      'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=1600&auto=format&fit=crop&q=90',
+      'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=1600&auto=format&fit=crop&q=90'
+    ],
+    india: [
+      'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=1600&auto=format&fit=crop&q=90',
+      'https://images.unsplash.com/photo-1532375810709-75b1da00537c?w=1600&auto=format&fit=crop&q=90'
+    ],
+    travel: [
+      'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1600&auto=format&fit=crop&q=90',
+      'https://images.unsplash.com/photo-1503220317375-aaad61436b1b?w=1600&auto=format&fit=crop&q=90'
+    ]
+  };
+
+  const list = fallbacks[cat] || [DEFAULT_NEWS_IMAGE];
+  return list[index % list.length] || DEFAULT_NEWS_IMAGE;
+};
+
+// Format clean full date & time (e.g. "2 SEPT 2026, 03:07 PM")
 const formatFullDateTime = (dateStr) => {
-  if (!dateStr) return '30 AUG 2026, 12:30 AM';
+  if (!dateStr) return 'TODAY, LATEST';
   try {
     const d = new Date(dateStr);
     const dateFormatted = d.toLocaleDateString('en-GB', {
@@ -20,12 +124,12 @@ const formatFullDateTime = (dateStr) => {
     });
     return `${dateFormatted}, ${timeFormatted}`;
   } catch (e) {
-    return '30 AUG 2026, 12:30 AM';
+    return 'TODAY, LATEST';
   }
 };
 
 const formatTimeAgo = (dateStr) => {
-  if (!dateStr) return 'Recently';
+  if (!dateStr) return 'Just now';
   try {
     const diffHours = Math.round((new Date() - new Date(dateStr)) / (1000 * 60 * 60));
     if (diffHours < 1) return 'Just now';
@@ -34,27 +138,112 @@ const formatTimeAgo = (dateStr) => {
     const diffDays = Math.round(diffHours / 24);
     return `${diffDays}d ago`;
   } catch (e) {
-    return 'Recently';
+    return 'Just now';
   }
 };
 
-export const EditorialGrid = ({ heroStory, stories = [], onSelectStory }) => {
+export const EditorialGrid = ({ 
+  heroStory, 
+  stories = [], 
+  categoryStories = {}, 
+  selectedCountry = 'all',
+  onSelectStory 
+}) => {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
-  // Take top 10 stories for the Big Hero Poster slider
-  const heroSliderStories = [
-    ...(heroStory ? [heroStory] : []),
-    ...stories.filter((s) => !heroStory || s.id !== heroStory.id)
-  ].slice(0, 10);
+  const isCountryFiltered = selectedCountry && selectedCountry !== 'all';
+  const countryStories = isCountryFiltered
+    ? stories.filter((s) => s.country && s.country.toLowerCase() === selectedCountry.toLowerCase())
+    : stories;
 
-  // Stories for the Right Column scroll list
-  const heroIds = new Set(heroSliderStories.map((s) => s.id));
-  const rightColumnStories = stories.filter((s) => !heroIds.has(s.id));
-  const rightList = rightColumnStories.length >= 5 ? rightColumnStories : stories.slice(1, 15);
+  // Global set of story IDs used on the page to guarantee ZERO cross-section or cross-column duplicates
+  const usedStoryIds = new Set();
 
-  // Remaining stories for bottom grid
-  const remainingStories = stories.slice(10, 22);
+  // 1. Stories for the Hero Slider: Take the freshest stories (Latest news first!)
+  const heroSliderStories = countryStories.length > 0
+    ? [
+        ...(heroStory && (!isCountryFiltered || heroStory.country?.toLowerCase() === selectedCountry.toLowerCase()) ? [heroStory] : []),
+        ...countryStories.filter((s) => !heroStory || s.id !== heroStory.id)
+      ].slice(0, 8)
+    : [];
+
+  // Register hero slider IDs
+  heroSliderStories.forEach((s) => usedStoryIds.add(s.id));
+
+  // 2. Stories for Hero Right Column (Top Developments): Take freshest developments
+  const rightColumnStories = [];
+  for (const s of countryStories) {
+    if (rightColumnStories.length >= 7) break;
+    if (s.id !== (heroStory?.id)) {
+      rightColumnStories.push(s);
+      usedStoryIds.add(s.id);
+    }
+  }
+
+  // 3. Strict Category Helper with GUARANTEED UNIQUE STORY ALLOCATION
+  const getCatList = (catName, count = 4) => {
+    const key = catName.toLowerCase();
+    const picked = [];
+
+    // Step A: Pick from partitioned categoryStories that haven't been displayed yet
+    const fromCat = (categoryStories[key] || []).filter(
+      (s) => !usedStoryIds.has(s.id) && (!isCountryFiltered || s.country?.toLowerCase() === selectedCountry.toLowerCase())
+    );
+    for (const s of fromCat) {
+      if (picked.length >= count) break;
+      picked.push(s);
+      usedStoryIds.add(s.id);
+    }
+
+    // Step B: If more needed, pick from countryStories matching this category
+    if (picked.length < count) {
+      const matchingCat = countryStories.filter(
+        (s) => s.category?.toLowerCase() === key && !usedStoryIds.has(s.id)
+      );
+      for (const s of matchingCat) {
+        if (picked.length >= count) break;
+        picked.push(s);
+        usedStoryIds.add(s.id);
+      }
+    }
+
+    // Step C: If still needed, fill with remaining unused stories from active country/feed (Zero duplication!)
+    if (picked.length < count) {
+      const remainingUnused = countryStories.filter((s) => !usedStoryIds.has(s.id));
+      for (const s of remainingUnused) {
+        if (picked.length >= count) break;
+        picked.push(s);
+        usedStoryIds.add(s.id);
+      }
+    }
+
+    return picked;
+  };
+
+  // Section allocations: STRICTLY ACCURATE TO SELECTED COUNTRY & CATEGORY
+  const trendingTwoStories = getCatList('World', 2);
+  const sportStories = getCatList('Sport', 4);
+  const cultureStripStories = getCatList('Culture', 6);
+  const politicsSpotlight = getCatList('World', 1)[0] || countryStories[0];
+  const artsStories = getCatList('Culture', 3);
+  const watchVideoStories = getCatList('World', 4);
+  const techTwoStories = getCatList('Technology', 2);
+  const historyStory = getCatList('World', 1)[0] || countryStories[1] || countryStories[0];
+  const travelStories = getCatList('Culture', 2);
+
+  // 4-Column Grid: Business | Technology | Science | Health
+  // ZERO DUPLICATES: Every single column receives completely distinct, unique stories!
+  const businessCol = getCatList('Business', 4);
+  const techCol = getCatList('Technology', 4);
+  const scienceCol = getCatList('Science', 4);
+  const healthCol = getCatList('Health', 4);
+
+  // Regional / India stories
+  const regionalStories = getCatList('India', 4);
+
+  // Remaining general stories from active country
+  const remainingStories = countryStories.filter((s) => !usedStoryIds.has(s.id)).slice(0, 16);
 
   // Auto-slide every 7.5 seconds unless hovered
   useEffect(() => {
@@ -75,13 +264,15 @@ export const EditorialGrid = ({ heroStory, stories = [], onSelectStory }) => {
     setCurrentSlideIndex((prev) => (prev + 1) % heroSliderStories.length);
   };
 
-  const activeStory = heroSliderStories[currentSlideIndex] || heroSliderStories[0];
+  const activeStory = heroSliderStories[currentSlideIndex] || heroSliderStories[0] || stories[0];
 
   return (
     <main className="bbc-main-content">
-      {/* 2-Column Hero Section: Big Hero Poster + Right Column Inside Scroll */}
+      {/* ========================================================
+          1. HERO SECTION: Big HD Slider + Top Developments Column
+          ======================================================== */}
       <section className="bbc-hero-layout">
-        {/* Left: Big Hero Poster with Horizontal Sliding Track & Text Slide-Up */}
+        {/* Left: Big Hero Poster with Horizontal Sliding Track */}
         {heroSliderStories.length > 0 && (
           <div
             className="bbc-hero-poster-container"
@@ -94,23 +285,32 @@ export const EditorialGrid = ({ heroStory, stories = [], onSelectStory }) => {
               className="bbc-hero-slider-track"
               style={{ transform: `translateX(-${currentSlideIndex * 100}%)` }}
             >
-              {heroSliderStories.map((story, index) => (
-                <div key={`slide-${story.id}-${index}`} className="bbc-hero-slide-item">
-                  <img
-                    src={story.hero_image || DEFAULT_NEWS_IMAGE}
-                    alt={story.canonical_title}
-                    className="bbc-hero-poster-img"
-                    onError={(e) => { e.target.src = DEFAULT_NEWS_IMAGE; }}
-                  />
-                </div>
-              ))}
+              {heroSliderStories.map((story, index) => {
+                const fallbackImg = getCategoryFallbackImage(story.category, index);
+                const hdImg = getHdImageUrl(story.hero_image) || fallbackImg;
+                return (
+                  <div key={`slide-${story.id}-${index}`} className="bbc-hero-slide-item">
+                    <img
+                      src={hdImg}
+                      alt={story.canonical_title}
+                      className="bbc-hero-poster-img"
+                      loading={index === 0 ? "eager" : "lazy"}
+                      fetchPriority={index === 0 ? "high" : "auto"}
+                      decoding="async"
+                      onError={(e) => { e.target.src = fallbackImg; }}
+                    />
+                  </div>
+                );
+              })}
             </div>
 
-            {/* Top-Left Floating LIVE Badge on Hero Poster */}
-            <div className="bbc-hero-top-live-badge">
-              <span className="bbc-live-badge-dot" />
-              <span>LIVE</span>
-            </div>
+            {/* Top-Left Floating LIVE Badge (Only if story is actually a live stream / live coverage) */}
+            {(activeStory?.youtube_live || activeStory?.has_live_video || activeStory?.is_live === 1 || activeStory?.canonical_title?.toLowerCase()?.startsWith('live:')) && (
+              <div className="bbc-hero-top-live-badge">
+                <span className="bbc-live-badge-dot" />
+                <span>LIVE</span>
+              </div>
+            )}
 
             {/* Clean minimalist left navigation arrow */}
             <button
@@ -134,20 +334,18 @@ export const EditorialGrid = ({ heroStory, stories = [], onSelectStory }) => {
               <ChevronRight size={42} strokeWidth={2.8} />
             </button>
 
-            {/* 100% to 0% Dark Gradient Overlay with Slow Slide-Up Animation */}
+            {/* 100% to 0% Dark Gradient Overlay with Text */}
             {activeStory && (
               <div
                 key={`overlay-${activeStory.id}-${currentSlideIndex}`}
                 className="bbc-hero-gradient-overlay"
               >
-                {/* Proper Category & Full Date/Time */}
                 <div className="bbc-hero-overlay-kicker">
                   <span>{activeStory.category || 'World'}</span>
                   <span>•</span>
                   <span>{formatFullDateTime(activeStory.last_updated_at || activeStory.created_at)}</span>
                 </div>
 
-                {/* Clean, Refined Headline */}
                 <h2 className="bbc-hero-overlay-headline">
                   <span style={{ textDecoration: 'underline', textUnderlineOffset: 3 }}>
                     {activeStory.canonical_title}
@@ -165,11 +363,11 @@ export const EditorialGrid = ({ heroStory, stories = [], onSelectStory }) => {
         {/* Right Column: Scrollable Top Developments Inside Container */}
         <div className="bbc-grid-col-right-scroll">
           <div className="bbc-right-scroll-header">
-            Top Developments
+            <TrendingUp size={16} /> Top Developments
           </div>
 
           <div className="bbc-right-scroll-content">
-            {rightList.map((story) => (
+            {rightColumnStories.map((story) => (
               <article
                 key={story.id}
                 className="bbc-card-right"
@@ -191,46 +389,604 @@ export const EditorialGrid = ({ heroStory, stories = [], onSelectStory }) => {
         </div>
       </section>
 
-      {/* Lower Section: More Stories Grid */}
-      {remainingStories.length > 0 && (
-        <section style={{ marginTop: 40, borderTop: '2px solid #121212', paddingTop: 24 }}>
-          <h2 style={{ fontSize: 20, fontWeight: 900, marginBottom: 20, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            Latest International Coverage
-          </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 24 }}>
-            {remainingStories.map((story) => (
-              <article
-                key={story.id}
-                style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 8 }}
-                onClick={() => onSelectStory(story)}
-              >
-                {story.hero_image && (
-                  <div style={{ height: 160, overflow: 'hidden', background: '#eee', borderRadius: 2 }}>
+      {/* ========================================================
+          SPONSOR / EDITORIAL MISSION RIBBON (Matches BBC Media Action)
+          ======================================================== */}
+      {/* <div className="bbc-media-ribbon">
+        <div className="bbc-media-ribbon-left">
+          <span className="bbc-media-tag">WORLD INTELLIGENCE</span>
+          <span className="bbc-media-text">FACTUAL REPORTING ACROSS 25+ GLOBAL NEWS DESKS. ZERO BIAS.</span>
+        </div>
+        <div className="bbc-media-ribbon-right">
+          <span className="bbc-media-live-status">● LIVE INGESTION ACTIVE</span>
+        </div>
+      </div> */}
+
+      {/* ========================================================
+          2. TOP TRENDING STORIES (2 Big Side-by-Side Story Cards)
+          ======================================================== */}
+      {trendingTwoStories.length >= 2 && (
+        <section className="bbc-section-block">
+          <div className="bbc-section-header">
+            <span className="bbc-section-tag-red" />
+            <h3 className="bbc-section-title">TOP TRENDING & ESSENTIAL READS</h3>
+          </div>
+          <div className="bbc-two-feature-grid">
+            {trendingTwoStories.map((story, i) => {
+              const fallback = getCategoryFallbackImage(story.category, i);
+              const imgUrl = getHdImageUrl(story.hero_image) || fallback;
+              return (
+                <article
+                  key={story.id}
+                  className="bbc-two-feature-card"
+                  onClick={() => onSelectStory(story)}
+                >
+                  <div className="bbc-two-feature-img-wrap">
                     <img
-                      src={story.hero_image}
+                      src={imgUrl}
                       alt={story.canonical_title}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      onError={(e) => { e.target.style.display = 'none'; }}
+                      className="bbc-two-feature-img"
+                      onError={(e) => { e.target.src = fallback; }}
                       loading="lazy"
                     />
                   </div>
-                )}
-                <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: 15, fontWeight: 700, lineHeight: 1.35 }}>
-                  {story.canonical_title}
-                </h3>
-                <p style={{ fontSize: 13, color: '#4a4a4a', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                  {story.summary}
-                </p>
-                <div style={{ fontSize: 11, color: '#767676', display: 'flex', gap: 6 }}>
-                  <span>{formatTimeAgo(story.last_updated_at)}</span>
-                  <span>|</span>
-                  <span>{story.category}</span>
-                  {story.sources_count > 1 && (
-                    <span style={{ color: '#006699', fontWeight: 600 }}>• {story.sources_count} sources</span>
-                  )}
+                  <div className="bbc-two-feature-body">
+                    <div className="bbc-card-meta" style={{ marginBottom: 6 }}>
+                      <span className="bbc-kicker-red">{story.category}</span>
+                      <span>•</span>
+                      <span>{formatTimeAgo(story.last_updated_at)}</span>
+                    </div>
+                    <h2 className="bbc-two-feature-title">{story.canonical_title}</h2>
+                    <p className="bbc-two-feature-snippet">{story.summary}</p>
+                    <div className="bbc-card-meta">
+                      {story.sources_count > 1 && (
+                        <span style={{ color: '#006699', fontWeight: 700 }}>
+                          Verified across {story.sources_count} publishers
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* ========================================================
+          3. SPORT SECTION (Big Sports Feature + 3 Side Sports Cards)
+          ======================================================== */}
+      {sportStories.length > 0 && (
+        <section className="bbc-section-block">
+          <div className="bbc-section-header">
+            <span className="bbc-section-tag-red" />
+            <h3 className="bbc-section-title">
+              SPORT <ChevronRight size={18} className="bbc-section-chevron" />
+            </h3>
+          </div>
+          <div className="bbc-sport-split-grid">
+            {/* Main Featured Sport Card */}
+            {sportStories[0] && (
+              <article
+                className="bbc-sport-hero-card"
+                onClick={() => onSelectStory(sportStories[0])}
+              >
+                <div className="bbc-sport-hero-img-wrap">
+                  <img
+                    src={getHdImageUrl(sportStories[0].hero_image) || getCategoryFallbackImage('sport', 0)}
+                    alt={sportStories[0].canonical_title}
+                    className="bbc-sport-hero-img"
+                    onError={(e) => { e.target.src = getCategoryFallbackImage('sport', 0); }}
+                    loading="lazy"
+                  />
+                  <div className="bbc-sport-live-badge">
+                    <span className="bbc-live-badge-dot" />
+                    <span>MATCH COVERAGE</span>
+                  </div>
+                </div>
+                <div className="bbc-sport-hero-body">
+                  <span className="bbc-kicker-red">SPORT REPORT</span>
+                  <h2 className="bbc-sport-hero-title">{sportStories[0].canonical_title}</h2>
+                  <p className="bbc-sport-hero-snippet">{sportStories[0].summary}</p>
+                  <div className="bbc-card-meta">
+                    <span>{formatTimeAgo(sportStories[0].last_updated_at)}</span>
+                    <span>|</span>
+                    <span style={{ color: '#006699', fontWeight: 600 }}>{sportStories[0].sources_count} sources reporting</span>
+                  </div>
                 </div>
               </article>
-            ))}
+            )}
+
+            {/* Side 3 Sports Stories */}
+            <div className="bbc-sport-side-list">
+              {sportStories.slice(1, 4).map((story, i) => {
+                const img = getHdImageUrl(story.hero_image) || getCategoryFallbackImage('sport', i + 1);
+                return (
+                  <article
+                    key={story.id}
+                    className="bbc-sport-side-card"
+                    onClick={() => onSelectStory(story)}
+                  >
+                    <img
+                      src={img}
+                      alt={story.canonical_title}
+                      className="bbc-sport-side-img"
+                      onError={(e) => { e.target.src = getCategoryFallbackImage('sport', i + 1); }}
+                      loading="lazy"
+                    />
+                    <div className="bbc-sport-side-body">
+                      <h4 className="bbc-sport-side-title">{story.canonical_title}</h4>
+                      <div className="bbc-card-meta">
+                        <span>{formatTimeAgo(story.last_updated_at)}</span>
+                        <span>•</span>
+                        <span>Sport</span>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ========================================================
+          4. CULTURE & ENTERTAINMENT STRIP (Row of 6 Visual Cards)
+          ======================================================== */}
+      {cultureStripStories.length > 0 && (
+        <section className="bbc-section-block">
+          <div className="bbc-section-header">
+            <span className="bbc-section-tag-red" />
+            <h3 className="bbc-section-title">
+              CULTURE & ENTERTAINMENT <ChevronRight size={18} className="bbc-section-chevron" />
+            </h3>
+          </div>
+          <div className="bbc-culture-row-grid">
+            {cultureStripStories.map((story, i) => {
+              const img = getHdImageUrl(story.hero_image) || getCategoryFallbackImage('culture', i);
+              return (
+                <article
+                  key={story.id}
+                  className="bbc-culture-card"
+                  onClick={() => onSelectStory(story)}
+                >
+                  <div className="bbc-culture-img-wrap">
+                    <img
+                      src={img}
+                      alt={story.canonical_title}
+                      className="bbc-culture-img"
+                      onError={(e) => { e.target.src = getCategoryFallbackImage('culture', i); }}
+                      loading="lazy"
+                    />
+                  </div>
+                  <span className="bbc-culture-tag">{story.category || 'Culture'}</span>
+                  <h4 className="bbc-culture-title">{story.canonical_title}</h4>
+                  <div className="bbc-card-meta" style={{ marginTop: 'auto' }}>
+                    <span>{formatTimeAgo(story.last_updated_at)}</span>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* ========================================================
+          5. IN-DEPTH GLOBAL SPOTLIGHT & ANALYSIS
+          ======================================================== */}
+      {politicsSpotlight && (
+        <section className="bbc-section-block">
+          <div className="bbc-section-header">
+            <span className="bbc-section-tag-red" />
+            <h3 className="bbc-section-title">GLOBAL IN-DEPTH SPOTLIGHT</h3>
+          </div>
+          <article
+            className="bbc-spotlight-banner"
+            onClick={() => onSelectStory(politicsSpotlight)}
+          >
+            <div className="bbc-spotlight-img-wrap">
+              <img
+                src={getHdImageUrl(politicsSpotlight.hero_image) || getCategoryFallbackImage('world', 0)}
+                alt={politicsSpotlight.canonical_title}
+                className="bbc-spotlight-img"
+                onError={(e) => { e.target.src = getCategoryFallbackImage('world', 0); }}
+                loading="lazy"
+              />
+            </div>
+            <div className="bbc-spotlight-content">
+              <div className="bbc-spotlight-badge">
+                <Sparkles size={14} /> EDITORIAL DEEP DIVE
+              </div>
+              <h2 className="bbc-spotlight-title">{politicsSpotlight.canonical_title}</h2>
+              <p className="bbc-spotlight-snippet">{politicsSpotlight.summary}</p>
+
+              {politicsSpotlight.ai_what_happened && (
+                <div className="bbc-spotlight-quote">
+                  "{politicsSpotlight.ai_what_happened.slice(0, 180)}..."
+                </div>
+              )}
+
+              <div className="bbc-card-meta" style={{ marginTop: 16 }}>
+                <span>Updated {formatFullDateTime(politicsSpotlight.last_updated_at)}</span>
+                <span>|</span>
+                <span style={{ color: '#006699', fontWeight: 700 }}>
+                  Multi-Source Attribution: {politicsSpotlight.sources_count} agencies
+                </span>
+              </div>
+            </div>
+          </article>
+        </section>
+      )}
+
+      {/* ========================================================
+          6. ENTERTAINMENT & ARTS (3-Card Balanced Grid)
+          ======================================================== */}
+      {artsStories.length > 0 && (
+        <section className="bbc-section-block">
+          <div className="bbc-section-header">
+            <span className="bbc-section-tag-red" />
+            <h3 className="bbc-section-title">
+              ENTERTAINMENT & ARTS <ChevronRight size={18} className="bbc-section-chevron" />
+            </h3>
+          </div>
+          <div className="bbc-three-grid">
+            {artsStories.map((story, i) => {
+              const img = getHdImageUrl(story.hero_image) || getCategoryFallbackImage('culture', i + 3);
+              return (
+                <article
+                  key={story.id}
+                  className="bbc-three-card"
+                  onClick={() => onSelectStory(story)}
+                >
+                  <div className="bbc-three-img-wrap">
+                    <img
+                      src={img}
+                      alt={story.canonical_title}
+                      className="bbc-three-img"
+                      onError={(e) => { e.target.src = getCategoryFallbackImage('culture', i + 3); }}
+                      loading="lazy"
+                    />
+                  </div>
+                  <div className="bbc-three-body">
+                    <span className="bbc-kicker-red">ARTS & CINEMA</span>
+                    <h3 className="bbc-three-title">{story.canonical_title}</h3>
+                    <p className="bbc-three-snippet">{story.summary}</p>
+                    <div className="bbc-card-meta">
+                      <span>{formatTimeAgo(story.last_updated_at)}</span>
+                      <span>•</span>
+                      <span>Culture</span>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* ========================================================
+          7. WATCH / MUST WATCH (Dark Background Video Strip)
+          ======================================================== */}
+      {watchVideoStories.length > 0 && (
+        <section className="bbc-video-strip-container">
+          <div className="bbc-video-strip-header">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span className="bbc-video-dot" />
+              <h3 className="bbc-video-heading">MUST WATCH & BROADCASTS</h3>
+            </div>
+            <span className="bbc-video-sublink">Watch World News Live ▶</span>
+          </div>
+          <div className="bbc-video-cards-grid">
+            {watchVideoStories.map((story, i) => {
+              const img = getHdImageUrl(story.hero_image) || getCategoryFallbackImage('world', i + 4);
+              const durations = ['02:45', '03:18', '01:52', '04:10'];
+              return (
+                <article
+                  key={story.id}
+                  className="bbc-video-card"
+                  onClick={() => onSelectStory(story)}
+                >
+                  <div className="bbc-video-thumb-wrap">
+                    <img
+                      src={img}
+                      alt={story.canonical_title}
+                      className="bbc-video-thumb"
+                      onError={(e) => { e.target.src = getCategoryFallbackImage('world', i + 4); }}
+                      loading="lazy"
+                    />
+                    <div className="bbc-video-play-btn">
+                      <Play size={18} fill="#ffffff" color="#ffffff" />
+                    </div>
+                    <span className="bbc-video-duration">▶ {durations[i % durations.length]}</span>
+                  </div>
+                  <span className="bbc-video-tag">{story.category || 'News'}</span>
+                  <h4 className="bbc-video-title">{story.canonical_title}</h4>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* ========================================================
+          8. INNOVATION & TECHNOLOGY (2-Col Featured Block)
+          ======================================================== */}
+      {techTwoStories.length >= 2 && (
+        <section className="bbc-section-block">
+          <div className="bbc-section-header">
+            <span className="bbc-section-tag-red" />
+            <h3 className="bbc-section-title">
+              INNOVATION & TECHNOLOGY <ChevronRight size={18} className="bbc-section-chevron" />
+            </h3>
+          </div>
+          <div className="bbc-two-feature-grid">
+            {techTwoStories.map((story, i) => {
+              const img = getHdImageUrl(story.hero_image) || getCategoryFallbackImage('technology', i);
+              return (
+                <article
+                  key={story.id}
+                  className="bbc-two-feature-card"
+                  onClick={() => onSelectStory(story)}
+                >
+                  <div className="bbc-two-feature-img-wrap">
+                    <img
+                      src={img}
+                      alt={story.canonical_title}
+                      className="bbc-two-feature-img"
+                      onError={(e) => { e.target.src = getCategoryFallbackImage('technology', i); }}
+                      loading="lazy"
+                    />
+                  </div>
+                  <div className="bbc-two-feature-body">
+                    <span className="bbc-kicker-red">TECH INTELLIGENCE</span>
+                    <h2 className="bbc-two-feature-title">{story.canonical_title}</h2>
+                    <p className="bbc-two-feature-snippet">{story.summary}</p>
+                    <div className="bbc-card-meta">
+                      <span>{formatTimeAgo(story.last_updated_at)}</span>
+                      <span>|</span>
+                      <span>Technology</span>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* ========================================================
+          9. HISTORY & LONG READS (Heritage Split Banner)
+          ======================================================== */}
+      {historyStory && (
+        <section className="bbc-section-block">
+          <div className="bbc-history-banner" onClick={() => onSelectStory(historyStory)}>
+            <div className="bbc-history-img-wrap">
+              <img
+                src={getHdImageUrl(historyStory.hero_image) || getCategoryFallbackImage('world', 5)}
+                alt={historyStory.canonical_title}
+                className="bbc-history-img"
+                onError={(e) => { e.target.src = getCategoryFallbackImage('world', 5); }}
+                loading="lazy"
+              />
+            </div>
+            <div className="bbc-history-content">
+              <div className="bbc-history-kicker">
+                <BookOpen size={15} /> BBC ARCHIVE & LONG READS
+              </div>
+              <h2 className="bbc-history-title">{historyStory.canonical_title}</h2>
+              <p className="bbc-history-snippet">{historyStory.summary}</p>
+              <div className="bbc-card-meta">
+                <span>In-depth historical context and expert analysis</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ========================================================
+          10. 4-COLUMN CATEGORY GRID: Business | Tech | Science | Health
+          ======================================================== */}
+      <section className="bbc-section-block" style={{ borderTop: '2px solid #121212', paddingTop: 28 }}>
+        <div className="bbc-four-category-grid">
+          {/* Column 1: Business */}
+          <div className="bbc-category-col">
+            <h3 className="bbc-col-title">
+              BUSINESS <ChevronRight size={16} />
+            </h3>
+            {businessCol[0] && (
+              <div className="bbc-col-lead-card" onClick={() => onSelectStory(businessCol[0])}>
+                <img
+                  src={getHdImageUrl(businessCol[0].hero_image) || getCategoryFallbackImage('business', 0)}
+                  alt={businessCol[0].canonical_title}
+                  className="bbc-col-lead-img"
+                  onError={(e) => { e.target.src = getCategoryFallbackImage('business', 0); }}
+                  loading="lazy"
+                />
+                <h4 className="bbc-col-lead-title">{businessCol[0].canonical_title}</h4>
+                <p className="bbc-col-lead-snippet">{businessCol[0].summary}</p>
+              </div>
+            )}
+            <ul className="bbc-col-list">
+              {businessCol.slice(1, 4).map((s) => (
+                <li key={s.id} onClick={() => onSelectStory(s)}>
+                  <h5>{s.canonical_title}</h5>
+                  <span>{formatTimeAgo(s.last_updated_at)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Column 2: Technology */}
+          <div className="bbc-category-col">
+            <h3 className="bbc-col-title">
+              TECHNOLOGY <ChevronRight size={16} />
+            </h3>
+            {techCol[0] && (
+              <div className="bbc-col-lead-card" onClick={() => onSelectStory(techCol[0])}>
+                <img
+                  src={getHdImageUrl(techCol[0].hero_image) || getCategoryFallbackImage('technology', 1)}
+                  alt={techCol[0].canonical_title}
+                  className="bbc-col-lead-img"
+                  onError={(e) => { e.target.src = getCategoryFallbackImage('technology', 1); }}
+                  loading="lazy"
+                />
+                <h4 className="bbc-col-lead-title">{techCol[0].canonical_title}</h4>
+                <p className="bbc-col-lead-snippet">{techCol[0].summary}</p>
+              </div>
+            )}
+            <ul className="bbc-col-list">
+              {techCol.slice(1, 4).map((s) => (
+                <li key={s.id} onClick={() => onSelectStory(s)}>
+                  <h5>{s.canonical_title}</h5>
+                  <span>{formatTimeAgo(s.last_updated_at)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Column 3: Science */}
+          <div className="bbc-category-col">
+            <h3 className="bbc-col-title">
+              SCIENCE <ChevronRight size={16} />
+            </h3>
+            {scienceCol[0] && (
+              <div className="bbc-col-lead-card" onClick={() => onSelectStory(scienceCol[0])}>
+                <img
+                  src={getHdImageUrl(scienceCol[0].hero_image) || getCategoryFallbackImage('science', 0)}
+                  alt={scienceCol[0].canonical_title}
+                  className="bbc-col-lead-img"
+                  onError={(e) => { e.target.src = getCategoryFallbackImage('science', 0); }}
+                  loading="lazy"
+                />
+                <h4 className="bbc-col-lead-title">{scienceCol[0].canonical_title}</h4>
+                <p className="bbc-col-lead-snippet">{scienceCol[0].summary}</p>
+              </div>
+            )}
+            <ul className="bbc-col-list">
+              {scienceCol.slice(1, 4).map((s) => (
+                <li key={s.id} onClick={() => onSelectStory(s)}>
+                  <h5>{s.canonical_title}</h5>
+                  <span>{formatTimeAgo(s.last_updated_at)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Column 4: Health */}
+          <div className="bbc-category-col">
+            <h3 className="bbc-col-title">
+              HEALTH <ChevronRight size={16} />
+            </h3>
+            {healthCol[0] && (
+              <div className="bbc-col-lead-card" onClick={() => onSelectStory(healthCol[0])}>
+                <img
+                  src={getHdImageUrl(healthCol[0].hero_image) || getCategoryFallbackImage('health', 0)}
+                  alt={healthCol[0].canonical_title}
+                  className="bbc-col-lead-img"
+                  onError={(e) => { e.target.src = getCategoryFallbackImage('health', 0); }}
+                  loading="lazy"
+                />
+                <h4 className="bbc-col-lead-title">{healthCol[0].canonical_title}</h4>
+                <p className="bbc-col-lead-snippet">{healthCol[0].summary}</p>
+              </div>
+            )}
+            <ul className="bbc-col-list">
+              {healthCol.slice(1, 4).map((s) => (
+                <li key={s.id} onClick={() => onSelectStory(s)}>
+                  <h5>{s.canonical_title}</h5>
+                  <span>{formatTimeAgo(s.last_updated_at)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================
+          11. DISCOVER & SOUNDS / AUDIO (Colorful Square Tiles)
+          ======================================================== */}
+      <section className="bbc-section-block">
+        <div className="bbc-section-header">
+          <span className="bbc-section-tag-red" />
+          <h3 className="bbc-section-title">
+            DISCOVER & AUDIO <ChevronRight size={18} className="bbc-section-chevron" />
+          </h3>
+        </div>
+        <div className="bbc-culture-row-grid">
+          {regionalStories.map((story, i) => {
+            const colors = ['#0284c7', '#7c3aed', '#059669', '#dc2626', '#d97706', '#4f46e5'];
+            const img = getHdImageUrl(story.hero_image) || getCategoryFallbackImage('india', i);
+            return (
+              <article
+                key={story.id}
+                className="bbc-culture-card"
+                onClick={() => onSelectStory(story)}
+              >
+                <div className="bbc-culture-img-wrap">
+                  <img
+                    src={img}
+                    alt={story.canonical_title}
+                    className="bbc-culture-img"
+                    onError={(e) => { e.target.src = getCategoryFallbackImage('india', i); }}
+                    loading="lazy"
+                  />
+                  <div className="bbc-audio-badge" style={{ background: colors[i % colors.length] }}>
+                    <Headphones size={13} /> SOUNDS
+                  </div>
+                </div>
+                <span className="bbc-culture-tag">{story.category || 'Regional'}</span>
+                <h4 className="bbc-culture-title">{story.canonical_title}</h4>
+                <div className="bbc-card-meta" style={{ marginTop: 'auto' }}>
+                  <span>{formatTimeAgo(story.last_updated_at)}</span>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ========================================================
+          12. LATEST INTERNATIONAL COVERAGE (4-Col Grid)
+          ======================================================== */}
+      {remainingStories.length > 0 && (
+        <section className="bbc-section-block" style={{ borderTop: '2px solid #121212', paddingTop: 28 }}>
+          <div className="bbc-section-header">
+            <span className="bbc-section-tag-red" />
+            <h3 className="bbc-section-title">MORE FROM WORLD NEWS</h3>
+          </div>
+          <div className="bbc-four-grid">
+            {remainingStories.map((story, i) => {
+              const fallback = getCategoryFallbackImage(story.category, i);
+              const imgUrl = getHdImageUrl(story.hero_image) || fallback;
+              return (
+                <article
+                  key={story.id}
+                  className="bbc-card-bottom"
+                  onClick={() => onSelectStory(story)}
+                >
+                  <div className="bbc-card-bottom-img-wrap">
+                    <img
+                      src={imgUrl}
+                      alt={story.canonical_title}
+                      className="bbc-card-bottom-img"
+                      onError={(e) => { e.target.src = fallback; }}
+                      loading="lazy"
+                    />
+                  </div>
+                  <div className="bbc-card-bottom-body">
+                    <span className="bbc-kicker-red">{story.category}</span>
+                    <h4 className="bbc-card-bottom-title">{story.canonical_title}</h4>
+                    <p className="bbc-card-bottom-snippet">{story.summary}</p>
+                    <div className="bbc-card-meta" style={{ marginTop: 'auto' }}>
+                      <span>{formatTimeAgo(story.last_updated_at)}</span>
+                      {story.sources_count > 1 && (
+                        <span>• {story.sources_count} sources</span>
+                      )}
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </section>
       )}

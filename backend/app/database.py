@@ -16,30 +16,14 @@ def verify_pwd(password: str, hashed: str) -> bool:
     except Exception:
         return False
 
-# Global connection pool for blazing fast connection reuse
-_pool = None
-
-def get_pool():
-    global _pool
-    if _pool is None:
-        _pool = ThreadedConnectionPool(
-            minconn=1,
-            maxconn=15,
-            dsn=settings.DATABASE_URL
-        )
-    return _pool
-
 def get_db_connection():
-    pool = get_pool()
-    conn = pool.getconn()
-    conn.cursor_factory = RealDictCursor
+    conn = psycopg2.connect(settings.DATABASE_URL, cursor_factory=RealDictCursor)
+    conn.autocommit = True
     return conn
 
 @contextmanager
 def db_session() -> Generator[psycopg2.extensions.connection, None, None]:
-    pool = get_pool()
-    conn = pool.getconn()
-    conn.cursor_factory = RealDictCursor
+    conn = psycopg2.connect(settings.DATABASE_URL, cursor_factory=RealDictCursor)
     try:
         yield conn
         conn.commit()
@@ -47,7 +31,10 @@ def db_session() -> Generator[psycopg2.extensions.connection, None, None]:
         conn.rollback()
         raise
     finally:
-        pool.putconn(conn)
+        try:
+            conn.close()
+        except Exception:
+            pass
 
 def init_db():
     """Initializes PostgreSQL tables, indexes, and seeds the default admin account."""

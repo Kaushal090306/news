@@ -13,6 +13,7 @@ from app.ingestion.parsers import (
     normalize_title,
     clean_html_to_text,
     extract_image_from_feed_entry,
+    upgrade_image_url_to_hd,
     parse_published_date,
     extract_entities_and_topics
 )
@@ -161,10 +162,22 @@ class IngestionPipeline:
                         src_dups += 1
                         continue
                         
-                    # Extract article metadata
+                    # Extract article metadata (check for full content:encoded, content, or summary)
                     norm_title = normalize_title(raw_title)
-                    summary_raw = getattr(entry, 'summary', '') or getattr(entry, 'description', '')
-                    clean_content = clean_html_to_text(summary_raw)
+                    content_candidates = []
+                    if hasattr(entry, 'content') and entry.content:
+                        for c in entry.content:
+                            if isinstance(c, dict) and 'value' in c:
+                                content_candidates.append(c['value'])
+                    if hasattr(entry, 'content_encoded'):
+                        content_candidates.append(entry.content_encoded)
+                    if hasattr(entry, 'summary'):
+                        content_candidates.append(entry.summary or '')
+                    if hasattr(entry, 'description'):
+                        content_candidates.append(entry.description or '')
+
+                    longest_html = max(content_candidates, key=len) if content_candidates else ''
+                    clean_content = clean_html_to_text(longest_html)
                     image_url = extract_image_from_feed_entry(entry)
                     pub_date = parse_published_date(entry)
                     entities = extract_entities_and_topics(raw_title, clean_content)
@@ -205,7 +218,9 @@ class IngestionPipeline:
                         story_row = cursor.fetchone()
                         if story_row:
                             new_sources_count = (story_row['sources_count'] or 1) + 1
-                            hero_img = story_row['hero_image'] or image_url
+                            hero_img = upgrade_image_url_to_hd(image_url or story_row['hero_image'] or '')
+                            if not hero_img and story_row['hero_image']:
+                                hero_img = upgrade_image_url_to_hd(story_row['hero_image'])
                             importance = ClusteringEngine.calculate_importance_score(new_sources_count, False, src['category'])
                             is_live = 1 if (new_sources_count >= 3 or importance >= 75) else 0
                             

@@ -34,6 +34,14 @@ export const api = {
     const query = new URLSearchParams(cleanParams).toString();
     return request(`/stories${query ? `?${query}` : ''}`);
   },
+  getStoriesByCategory: (date = null, country = null) => {
+    const params = new URLSearchParams();
+    if (date && date !== 'all') params.append('date', date);
+    if (country && country !== 'all') params.append('country', country);
+    const q = params.toString();
+    return request(`/stories/by-category${q ? `?${q}` : ''}`);
+  },
+  getAvailableDates: () => request('/stories/dates'),
   getHeroStory: (category) => {
     const cat = category && category !== 'all' ? `?category=${encodeURIComponent(category)}` : '';
     return request(`/stories/hero${cat}`);
@@ -49,6 +57,9 @@ export const api = {
   login: (data) => request('/auth/login', { method: 'POST', body: JSON.stringify(data) }),
   signup: (data) => request('/auth/signup', { method: 'POST', body: JSON.stringify(data) }),
   getProfile: () => request('/auth/me'),
+  updateProfile: (data) => request('/auth/profile', { method: 'PUT', body: JSON.stringify(data) }),
+  getNotifications: () => request('/auth/notifications'),
+  updateNotifications: (data) => request('/auth/notifications', { method: 'PUT', body: JSON.stringify(data) }),
   updatePreferences: (prefs) => request('/auth/preferences', { method: 'PUT', body: JSON.stringify(prefs) }),
 
   // Sources & Admin

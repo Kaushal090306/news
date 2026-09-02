@@ -57,36 +57,126 @@ def clean_html_to_text(html_content: str) -> str:
     text = re.sub(r'\s+', ' ', text).strip()
     return text
 
+def upgrade_image_url_to_hd(url: str) -> str:
+    """
+    Transforms thumbnail or low-res news image URLs into crystal-clear Full HD / high-resolution URLs.
+    Supports BBC, France24, The Guardian, NDTV, Times of India, CNN, TechCrunch, Wired, Ars Technica, etc.
+    """
+    if not url:
+        return ""
+    
+    hd_url = url.strip()
+    
+    # 1. BBC: upgrade /standard/240/ or /news/240/ to /standard/1024/ or /standard/1280/
+    if "ichef.bbci.co.uk" in hd_url:
+        hd_url = re.sub(r'/(standard|ws|news|wwhp)/\d+/', r'/\1/1024/', hd_url)
+        
+    # 2. France 24: upgrade /w:320/ or /w:1024/ to /w:1920/
+    elif "france24.com" in hd_url:
+        hd_url = re.sub(r'/w:\d+/', r'/w:1920/', hd_url)
+        
+    # 3. NDTV: add HD resize query parameter or upscale dimensions
+    elif "ndtvimg.com" in hd_url:
+        if "?im=" in hd_url:
+            hd_url = re.sub(r'width=\d+,height=\d+', 'width=1280,height=720', hd_url)
+            hd_url = re.sub(r'width=\d+', 'width=1280', hd_url)
+        else:
+            hd_url = f"{hd_url}?im=Resize,width=1280"
+            
+    # 4. Times of India / Economic Times: upscale width and height params
+    elif "toiimg.com" in hd_url or "etimg.com" in hd_url:
+        if "width-" in hd_url:
+            hd_url = re.sub(r'width-\d+,height-\d+', 'width-1200,height-900', hd_url)
+            hd_url = re.sub(r'width-\d+', 'width-1200', hd_url)
+            
+    # 5. CNN: upgrade from low-res crops to super-169 (1100x619)
+    elif "cnn.com" in hd_url:
+        hd_url = re.sub(r'-(medium|small|large|exlarge|hp-video|story-body|t1-main|large-11)(-\d+)?\.jpg', '-super-169.jpg', hd_url)
+        hd_url = hd_url.replace("medium-169", "super-169").replace("small-169", "super-169").replace("exlarge-169", "super-169")
+        
+    # 6. WordPress / TechCrunch / Variety / Ars Technica / The Verge: strip crop suffixes (-150x150, -300x200, etc.)
+    elif any(domain in hd_url for domain in ["techcrunch.com", "variety.com", "wp.com", "arstechnica.net", "theverge.com"]):
+        hd_url = re.sub(r'-\d+x\d+(\.(jpg|jpeg|png|webp|avif))', r'\1', hd_url, flags=re.IGNORECASE)
+
+    # 7. Unsplash: ensure max HD width & crisp quality
+    elif "images.unsplash.com" in hd_url:
+        hd_url = re.sub(r'w=\d+', 'w=1600', hd_url)
+        hd_url = re.sub(r'q=\d+', 'q=90', hd_url)
+
+    return hd_url
+
 def extract_image_from_feed_entry(entry) -> str:
-    """Extracts best available image from feed entry enclosures, media tags, or content."""
-    # 1. Check media_content
+    """Extracts highest resolution image available from feed entry enclosures, media tags, or content."""
+    candidates = []
+
+    # 1. media_content (sort and pick highest resolution/dimensions)
     if hasattr(entry, 'media_content') and entry.media_content:
         for media in entry.media_content:
-            if 'url' in media and (media.get('medium') == 'image' or any(ext in media['url'].lower() for ext in ['.jpg', '.jpeg', '.png', '.webp', '.avif'])):
-                return media['url']
-                
-    # 2. Check media_thumbnail
+            if not isinstance(media, dict):
+                continue
+            u = media.get('url', '')
+            if not u:
+                continue
+            width = int(media.get('width', 0)) if str(media.get('width', '')).isdigit() else 0
+            height = int(media.get('height', 0)) if str(media.get('height', '')).isdigit() else 0
+            score = (width * height) if (width and height) else (width or 200)
+            candidates.append((score, u))
+
+    # 2. media_thumbnail
     if hasattr(entry, 'media_thumbnail') and entry.media_thumbnail:
-        if isinstance(entry.media_thumbnail, list) and len(entry.media_thumbnail) > 0:
-            return entry.media_thumbnail[0].get('url', '')
-            
-    # 3. Check enclosures
+        thumbnails = entry.media_thumbnail if isinstance(entry.media_thumbnail, list) else [entry.media_thumbnail]
+        for thumb in thumbnails:
+            if not isinstance(thumb, dict):
+                continue
+            u = thumb.get('url', '')
+            if not u:
+                continue
+            width = int(thumb.get('width', 0)) if str(thumb.get('width', '')).isdigit() else 0
+            height = int(thumb.get('height', 0)) if str(thumb.get('height', '')).isdigit() else 0
+            score = (width * height) if (width and height) else (width or 150)
+            candidates.append((score, u))
+
+    # 3. enclosures
     if hasattr(entry, 'enclosures') and entry.enclosures:
         for enc in entry.enclosures:
-            if enc.get('type', '').startswith('image/') or any(ext in enc.get('href', '').lower() for ext in ['.jpg', '.jpeg', '.png', '.webp']):
-                return enc.get('href', '')
-                
-    # 4. Check HTML in description or summary
-    summary_html = getattr(entry, 'summary', '') or getattr(entry, 'description', '')
-    if summary_html:
-        soup = BeautifulSoup(summary_html, 'html.parser')
-        img = soup.find('img')
-        if img and img.get('src'):
-            src = img['src']
-            if not src.endswith('.gif') and 'beacon' not in src and 'tracking' not in src:
-                return src
-                
-    return ""
+            if not isinstance(enc, dict):
+                continue
+            u = enc.get('href', '')
+            enc_type = enc.get('type', '').lower()
+            if u and (enc_type.startswith('image/') or any(ext in u.lower() for ext in ['.jpg', '.jpeg', '.png', '.webp', '.avif'])):
+                length = int(enc.get('length', 0)) if str(enc.get('length', '')).isdigit() else 0
+                candidates.append((length or 100, u))
+
+    # 4. Check HTML in content / summary / description
+    contents_to_check = []
+    if hasattr(entry, 'content') and entry.content:
+        for c in entry.content:
+            if isinstance(c, dict) and 'value' in c:
+                contents_to_check.append(c['value'])
+    if hasattr(entry, 'summary'):
+        contents_to_check.append(entry.summary or '')
+    if hasattr(entry, 'description'):
+        contents_to_check.append(entry.description or '')
+
+    for html_text in contents_to_check:
+        if not html_text:
+            continue
+        soup = BeautifulSoup(html_text, 'html.parser')
+        for img in soup.find_all('img'):
+            src = img.get('src') or img.get('data-src') or img.get('data-original')
+            if src and not src.endswith('.gif') and 'beacon' not in src and 'tracking' not in src and '1x1' not in src:
+                w = int(img.get('width', 0)) if str(img.get('width', '')).isdigit() else 0
+                h = int(img.get('height', 0)) if str(img.get('height', '')).isdigit() else 0
+                candidates.append((w * h if (w and h) else (w or 50), src))
+
+    if not candidates:
+        return ""
+
+    # Sort candidates by resolution/score descending to get the highest quality
+    candidates.sort(key=lambda x: x[0], reverse=True)
+    best_url = candidates[0][1]
+
+    return upgrade_image_url_to_hd(best_url)
 
 def parse_published_date(entry) -> str:
     """Parse publication date to ISO 8601 string."""

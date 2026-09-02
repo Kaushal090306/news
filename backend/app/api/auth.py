@@ -123,6 +123,104 @@ def get_profile(current_user: dict = Depends(get_current_user_optional)):
         raise HTTPException(status_code=401, detail="Authentication required.")
     return {"user": current_user}
 
+class UpdateProfileRequest(BaseModel):
+    full_name: str
+    preferred_country: str = "Global"
+    preferred_categories: list[str] = ["World", "Technology", "Business"]
+
+@router.put("/profile")
+def update_profile(req: UpdateProfileRequest, current_user: dict = Depends(get_current_user_optional)):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Authentication required.")
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    prefs = current_user.get('preferences', {}) or {}
+    prefs['categories'] = req.preferred_categories
+    prefs['countries'] = [req.preferred_country]
+    
+    cursor.execute("""
+        UPDATE users 
+        SET full_name = %s, preferences = %s 
+        WHERE id = %s
+    """, (req.full_name, json.dumps(prefs), current_user['id']))
+    
+    conn.commit()
+    conn.close()
+    
+    updated_user = {
+        "id": current_user['id'],
+        "email": current_user['email'],
+        "full_name": req.full_name,
+        "role": current_user['role'],
+        "preferences": prefs
+    }
+    return {"status": "success", "user": updated_user}
+
+class UpdateNotificationsRequest(BaseModel):
+    email_notifications_enabled: bool = True
+    daily_digest: bool = True
+    breaking_alerts: bool = True
+    weekly_roundup: bool = False
+    digest_frequency: str = "daily"  # 'daily', 'twice_daily', 'weekly'
+    digest_time: str = "08:00"
+    subscribed_categories: list[str] = ["World", "Technology", "Business", "Science", "Health", "Sport"]
+    notification_email: str = ""
+
+@router.get("/notifications")
+def get_notifications(current_user: dict = Depends(get_current_user_optional)):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Authentication required.")
+    
+    prefs = current_user.get('preferences', {}) or {}
+    notifications = prefs.get('notifications', {
+        "email_notifications_enabled": True,
+        "daily_digest": True,
+        "breaking_alerts": True,
+        "weekly_roundup": False,
+        "digest_frequency": "daily",
+        "digest_time": "08:00",
+        "subscribed_categories": ["World", "Technology", "Business", "Science", "Health", "Sport"],
+        "notification_email": current_user['email']
+    })
+    return {"status": "success", "notifications": notifications}
+
+@router.put("/notifications")
+def update_notifications(req: UpdateNotificationsRequest, current_user: dict = Depends(get_current_user_optional)):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Authentication required.")
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    prefs = current_user.get('preferences', {}) or {}
+    prefs['notifications'] = req.dict()
+    
+    cursor.execute("""
+        UPDATE users 
+        SET preferences = %s 
+        WHERE id = %s
+    """, (json.dumps(prefs), current_user['id']))
+    
+    # Also sync with newsletter subscription table
+    try:
+        if req.email_notifications_enabled:
+            cursor.execute("""
+                INSERT INTO newsletter_subscribers (email, frequency, subscribed_at)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (email) DO UPDATE SET frequency = EXCLUDED.frequency, active = 1
+            """, (req.notification_email or current_user['email'], req.digest_frequency, datetime.now(timezone.utc)))
+        else:
+            cursor.execute("UPDATE newsletter_subscribers SET active = 0 WHERE email = %s", (current_user['email'],))
+    except Exception:
+        pass
+        
+    conn.commit()
+    conn.close()
+    
+    return {"status": "success", "notifications": req.dict()}
+
 @router.put("/preferences")
 def update_preferences(req: PreferencesRequest, current_user: dict = Depends(get_current_user_optional)):
     if not current_user:

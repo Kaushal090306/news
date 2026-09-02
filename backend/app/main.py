@@ -16,11 +16,13 @@ from app.api.newsletter import router as newsletter_router
 
 # Background periodic scheduler for feed ingestion
 async def periodic_ingestion_task():
+    # Wait 60 seconds after server startup before running background fetch
+    await asyncio.sleep(60)
     while True:
         try:
-            print("[Scheduler] Starting automatic feed ingestion cycle...")
+            print("[Scheduler] Starting periodic feed ingestion...")
             result = await IngestionPipeline.run_ingestion_cycle()
-            print(f"[Scheduler] Cycle completed: {result}")
+            print(f"[Scheduler] Feed ingestion cycle completed: {result}")
         except Exception as e:
             print(f"[Scheduler] Ingestion error: {e}")
         # Sleep for configured interval
@@ -28,15 +30,11 @@ async def periodic_ingestion_task():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Init database & sync sources
-    print("[Startup] Initializing Database & Sources Registry...")
+    # Startup: Init database
+    print("[Startup] Initializing Database & Tables...")
     init_db()
-    IngestionPipeline.sync_source_registry()
     
-    # Run an initial quick ingestion in background
-    asyncio.create_task(IngestionPipeline.run_ingestion_cycle())
-    
-    # Start periodic scheduler
+    # Start periodic background scheduler
     scheduler_task = asyncio.create_task(periodic_ingestion_task())
     
     yield
