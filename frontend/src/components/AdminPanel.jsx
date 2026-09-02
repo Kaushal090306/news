@@ -38,18 +38,29 @@ export const AdminPanel = ({ onBack }) => {
 
   const loadData = async () => {
     try {
-      const [statsRes, sourcesRes, clustersRes, logsRes, usersRes] = await Promise.all([
+      const [statsRes, sourcesRes, clustersRes, logsRes, usersRes] = await Promise.allSettled([
         api.getAdminStats(),
         api.getSources(),
         api.getAdminClusters(),
         api.getAdminLogs(),
         api.getAdminUsers()
       ]);
-      setStats(statsRes);
-      setSources(sourcesRes.sources || []);
-      setClusters(clustersRes.clusters || []);
-      setLogs(logsRes.logs || []);
-      setUsers(usersRes.users || []);
+
+      if (statsRes.status === 'fulfilled' && statsRes.value) {
+        setStats(statsRes.value);
+      }
+      if (sourcesRes.status === 'fulfilled' && sourcesRes.value) {
+        setSources(sourcesRes.value.sources || []);
+      }
+      if (clustersRes.status === 'fulfilled' && clustersRes.value) {
+        setClusters(clustersRes.value.clusters || []);
+      }
+      if (logsRes.status === 'fulfilled' && logsRes.value) {
+        setLogs(logsRes.value.logs || []);
+      }
+      if (usersRes.status === 'fulfilled' && usersRes.value) {
+        setUsers(usersRes.value.users || []);
+      }
     } catch (e) {
       console.error('Error loading admin data:', e);
     }
