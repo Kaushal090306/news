@@ -206,11 +206,7 @@ def get_hero_story(category: Optional[str] = None):
         cursor = conn.cursor()
         
         query = """
-            SELECT s.*,
-                (SELECT COUNT(*) FROM articles a WHERE a.story_id = s.id) as actual_sources_count,
-                (SELECT COALESCE(json_agg(DISTINCT src.name), '[]'::json) 
-                 FROM articles a JOIN sources src ON a.source_id = src.id 
-                 WHERE a.story_id = s.id) as sources_list
+            SELECT s.*
             FROM stories s
             WHERE s.status = 'published' AND s.hero_image IS NOT NULL AND s.hero_image != ''
         """
@@ -219,19 +215,16 @@ def get_hero_story(category: Optional[str] = None):
             query += " AND LOWER(s.category) = LOWER(%s)"
             params.append(category)
             
-        query += " ORDER BY s.last_updated_at DESC, s.is_live DESC, s.importance_score DESC LIMIT 1"
+        query += " ORDER BY s.last_updated_at DESC, s.importance_score DESC LIMIT 1"
         
         cursor.execute(query, params)
-        row = cursor.fetchone()
+        story = cursor.fetchone()
         
-        if not row:
+        if not story:
             cursor.execute("SELECT * FROM stories WHERE status = 'published' ORDER BY last_updated_at DESC LIMIT 1")
-            row = cursor.fetchone()
+            story = cursor.fetchone()
             
-        if not row:
-            return {"hero": None}
-            
-        return {"hero": serialize_story(dict(row))}
+        return {"story": serialize_story(dict(story)) if story else None}
 
 @router.get("/detail/{identifier:path}")
 def get_story_detail(identifier: str):

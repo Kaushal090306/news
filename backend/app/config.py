@@ -11,7 +11,7 @@ class Settings(BaseModel):
     # Neon PostgreSQL URL
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL",
-        "postgresql://neondb_owner:npg_GCcqhj13nowL@ep-crimson-rice-b36mvkba-pooler.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+        "postgresql://neondb_owner:npg_GCcqhj13nowL@ep-crimson-rice-b36mvkba.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
     )
     
     FETCH_INTERVAL_MINUTES: int = int(os.getenv("FETCH_INTERVAL_MINUTES", "10"))
