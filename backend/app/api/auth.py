@@ -117,6 +117,58 @@ def login(req: LoginRequest):
         }
     }
 
+class GoogleLoginRequest(BaseModel):
+    email: str
+    full_name: str = ""
+    avatar_url: str = ""
+    google_id: str = ""
+    credential: str = ""
+
+@router.post("/google")
+def google_auth(req: GoogleLoginRequest):
+    if not req.email:
+        raise HTTPException(status_code=400, detail="Google authentication failed: email required.")
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT * FROM users WHERE email = %s", (req.email.lower(),))
+    row = cursor.fetchone()
+    now_dt = datetime.now(timezone.utc)
+    
+    if row:
+        user = dict(row)
+        cursor.execute("UPDATE users SET last_login = %s WHERE id = %s", (now_dt, user['id']))
+        conn.commit()
+    else:
+        user_id = str(uuid.uuid4())
+        default_prefs = {"categories": ["World", "Technology", "Business"], "countries": ["Global"]}
+        cursor.execute("""
+        INSERT INTO users (id, email, password_hash, full_name, role, preferences, created_at, last_login)
+        VALUES (%s, %s, %s, %s, 'user', %s, %s, %s)
+        """, (user_id, req.email.lower(), "oauth_google", req.full_name or req.email.split('@')[0], json.dumps(default_prefs), now_dt, now_dt))
+        conn.commit()
+        
+        cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+        user = dict(cursor.fetchone())
+        
+    conn.close()
+    
+    token = create_access_token({"sub": user['id'], "email": user['email'], "role": user['role']})
+    preferences = json.loads(user['preferences']) if isinstance(user['preferences'], str) else user['preferences']
+    
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": {
+            "id": user['id'],
+            "email": user['email'],
+            "full_name": user['full_name'],
+            "role": user['role'],
+            "preferences": preferences
+        }
+    }
+
 @router.get("/me")
 def get_profile(current_user: dict = Depends(get_current_user_optional)):
     if not current_user:

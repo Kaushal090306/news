@@ -2,7 +2,25 @@ const API_BASE = (import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https
 
 export const getAuthToken = () => localStorage.getItem('world_news_token');
 export const setAuthToken = (token) => localStorage.setItem('world_news_token', token);
-export const removeAuthToken = () => localStorage.removeItem('world_news_token');
+export const getCachedUser = () => {
+  try {
+    const raw = localStorage.getItem('world_news_user');
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+};
+export const setCachedUser = (user) => {
+  if (user) {
+    localStorage.setItem('world_news_user', JSON.stringify(user));
+  } else {
+    localStorage.removeItem('world_news_user');
+  }
+};
+export const removeAuthToken = () => {
+  localStorage.removeItem('world_news_token');
+  localStorage.removeItem('world_news_user');
+};
 
 const request = async (endpoint, options = {}) => {
   const token = getAuthToken();
@@ -56,6 +74,7 @@ export const api = {
   // Auth & Profile
   login: (data) => request('/auth/login', { method: 'POST', body: JSON.stringify(data) }),
   signup: (data) => request('/auth/signup', { method: 'POST', body: JSON.stringify(data) }),
+  loginWithGoogle: (data) => request('/auth/google', { method: 'POST', body: JSON.stringify(data) }),
   getProfile: () => request('/auth/me'),
   updateProfile: (data) => request('/auth/profile', { method: 'PUT', body: JSON.stringify(data) }),
   getNotifications: () => request('/auth/notifications'),

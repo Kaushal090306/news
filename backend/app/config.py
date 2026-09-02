@@ -6,7 +6,7 @@ class Settings(BaseModel):
     API_PREFIX: str = "/api"
     SECRET_KEY: str = os.getenv("SECRET_KEY", "super-secret-news-ai-key-2026-bbc-style")
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7 # 7 days
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 15 # 15 days stay logged in
     
     # Neon PostgreSQL URL
     DATABASE_URL: str = os.getenv(

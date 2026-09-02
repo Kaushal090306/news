@@ -11,27 +11,29 @@ import { AdminPanel } from './components/AdminPanel';
 import { AuthModal } from './components/AuthModal';
 import { Footer } from './components/Footer';
 import { Calendar } from 'lucide-react';
-import { api, getAuthToken, removeAuthToken } from './services/api';
+import { api, getAuthToken, removeAuthToken, getCachedUser, setCachedUser } from './services/api';
 import './styles/bbc-theme.css';
 
 export function App() {
   const [activeCategory, setActiveCategory] = useState('all');
   const [selectedCountry, setSelectedCountry] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedDate, setSelectedDate] = useState('all');
   const [availableDates, setAvailableDates] = useState([]);
-  const [categoryStories, setCategoryStories] = useState({});
-  const [searchQuery, setSearchQuery] = useState('');
-  const [heroStory, setHeroStory] = useState(null);
+  
   const [stories, setStories] = useState([]);
+  const [heroStory, setHeroStory] = useState(null);
   const [breakingStories, setBreakingStories] = useState([]);
+  const [categoryStories, setCategoryStories] = useState({});
+
   const [selectedStory, setSelectedStory] = useState(null);
   const [storyDetailData, setStoryDetailData] = useState(null);
-  const [viewMode, setViewMode] = useState('feed'); // 'feed', 'article', 'bookmarks', 'profile', 'settings', 'admin'
+  const [viewMode, setViewMode] = useState('feed'); // 'feed' | 'article' | 'bookmarks' | 'profile' | 'settings' | 'admin'
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login');
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(() => getCachedUser());
   const [loading, setLoading] = useState(true);
 
   // Check auth profile on mount & check for deep linked story in URL
@@ -40,7 +42,10 @@ export function App() {
     if (token) {
       api.getProfile()
         .then((res) => {
-          setCurrentUser(res.user);
+          if (res && res.user) {
+            setCurrentUser(res.user);
+            setCachedUser(res.user);
+          }
         })
         .catch(() => removeAuthToken());
     }
@@ -186,6 +191,7 @@ export function App() {
 
   const handleAuthSuccess = (user) => {
     setCurrentUser(user);
+    setCachedUser(user);
     setAuthModalOpen(false);
   };
 
