@@ -143,16 +143,15 @@ export const Header = ({
       {/* 1. TOP HEADER (STICKY - Contains Logo, Hamburger Menu, Auth & Profile) */}
       <header className="bbc-top-header">
         <div className="bbc-header-container">
-          {/* Left: Menu & Search Icon */}
+          {/* Left: Menu Icon */}
           <div className="bbc-header-left">
             <button 
               className="bbc-menu-search-btn" 
               onClick={onOpenDrawer}
-              title="Open Navigation Menu & Search"
+              title="Open Navigation Menu"
               id="nav-menu-btn"
             >
               <Menu size={22} strokeWidth={2.5} />
-              <Search size={18} strokeWidth={2.5} style={{ marginLeft: -2 }} />
             </button>
           </div>
 

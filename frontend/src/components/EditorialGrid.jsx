@@ -147,35 +147,51 @@ export const EditorialGrid = ({
   stories = [], 
   categoryStories = {}, 
   selectedCountry = 'all',
-  onSelectStory 
+  activeCategory = 'all',
+  onSelectStory,
+  onSelectCategory 
 }) => {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
+  // Reset slide index whenever active category or country changes
+  useEffect(() => {
+    setCurrentSlideIndex(0);
+  }, [activeCategory, selectedCountry]);
+
   const isCountryFiltered = selectedCountry && selectedCountry !== 'all';
+  const isCategoryFiltered = activeCategory && activeCategory !== 'all';
+
   const countryStories = isCountryFiltered
     ? stories.filter((s) => s.country && s.country.toLowerCase() === selectedCountry.toLowerCase())
     : stories;
 
+  // Prioritize active category stories if category is selected
+  const categoryFilteredStories = isCategoryFiltered
+    ? countryStories.filter((s) => s.category?.toLowerCase() === activeCategory.toLowerCase())
+    : countryStories;
+
+  const displayPool = categoryFilteredStories.length > 0 ? categoryFilteredStories : countryStories;
+
   // Global set of story IDs used on the page to guarantee ZERO cross-section or cross-column duplicates
   const usedStoryIds = new Set();
 
-  // 1. Stories for the Hero Slider: Take the freshest stories (Latest news first!)
-  const heroSliderStories = countryStories.length > 0
+  // 1. Stories for the Hero Slider: Take freshest stories from active category/country
+  const heroSliderStories = displayPool.length > 0
     ? [
-        ...(heroStory && (!isCountryFiltered || heroStory.country?.toLowerCase() === selectedCountry.toLowerCase()) ? [heroStory] : []),
-        ...countryStories.filter((s) => !heroStory || s.id !== heroStory.id)
+        ...(heroStory && (!isCountryFiltered || heroStory.country?.toLowerCase() === selectedCountry.toLowerCase()) && (!isCategoryFiltered || heroStory.category?.toLowerCase() === activeCategory.toLowerCase()) ? [heroStory] : []),
+        ...displayPool.filter((s) => !heroStory || s.id !== heroStory.id)
       ].slice(0, 8)
-    : [];
+    : displayPool.slice(0, 8);
 
   // Register hero slider IDs
   heroSliderStories.forEach((s) => usedStoryIds.add(s.id));
 
   // 2. Stories for Hero Right Column (Top Developments): Take freshest developments
   const rightColumnStories = [];
-  for (const s of countryStories) {
+  for (const s of displayPool) {
     if (rightColumnStories.length >= 7) break;
-    if (s.id !== (heroStory?.id)) {
+    if (!usedStoryIds.has(s.id)) {
       rightColumnStories.push(s);
       usedStoryIds.add(s.id);
     }

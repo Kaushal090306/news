@@ -238,6 +238,7 @@ export function App() {
               stories={stories}
               categoryStories={categoryStories}
               selectedCountry={selectedCountry}
+              activeCategory={activeCategory}
               onSelectStory={handleSelectStory}
               onSelectCategory={handleCategorySelect}
             />
