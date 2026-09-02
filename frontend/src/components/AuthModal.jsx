@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Check, Shield } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Check } from 'lucide-react';
 import { api, setAuthToken, setCachedUser } from '../services/api';
 
 const AVAILABLE_TOPICS = ["World", "India", "Technology", "Business", "Sport", "Health", "Science", "Culture"];
@@ -16,6 +16,52 @@ export const AuthModal = ({ isOpen, mode = 'login', onClose, onAuthSuccess }) =>
   const [googleEmail, setGoogleEmail] = useState('');
   const [googleName, setGoogleName] = useState('');
 
+  // Handle Google Identity Services (One Tap / SDK)
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (window.google && window.google.accounts && clientId) {
+      try {
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: async (response) => {
+            if (response && response.credential) {
+              setLoading(true);
+              try {
+                // Decode Google JWT
+                const base64Url = response.credential.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const payload = JSON.parse(decodeURIComponent(escape(window.atob(base64))));
+                
+                const res = await api.loginWithGoogle({
+                  email: payload.email,
+                  full_name: payload.name || payload.given_name || payload.email.split('@')[0],
+                  avatar_url: payload.picture || '',
+                  google_id: payload.sub || '',
+                  credential: response.credential
+                });
+
+                if (res && res.access_token) {
+                  setAuthToken(res.access_token);
+                  setCachedUser(res.user);
+                  onAuthSuccess(res.user);
+                  onClose();
+                }
+              } catch (err) {
+                setError(err.message || 'Google authentication failed');
+              } finally {
+                setLoading(false);
+              }
+            }
+          }
+        });
+      } catch (e) {
+        console.warn('Google Identity initialization error:', e);
+      }
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const toggleTopic = (topic) => {
@@ -26,19 +72,13 @@ export const AuthModal = ({ isOpen, mode = 'login', onClose, onAuthSuccess }) =>
     }
   };
 
-  const handleFillAdmin = () => {
-    setEmail('admin@bbcnews.ai');
-    setPassword('admin123456');
-    setCurrentMode('login');
-  };
-
   const handleGoogleLogin = async (e) => {
     if (e) e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      const gEmail = googleEmail.trim() || email.trim() || 'kaushal.news.user@gmail.com';
+      const gEmail = googleEmail.trim() || email.trim() || 'kaushal.user@gmail.com';
       const gName = googleName.trim() || fullName.trim() || gEmail.split('@')[0];
 
       const res = await api.loginWithGoogle({
@@ -127,7 +167,7 @@ export const AuthModal = ({ isOpen, mode = 'login', onClose, onAuthSuccess }) =>
         <p style={{ fontSize: 13, color: '#4a4a4a', marginBottom: 18 }}>
           {currentMode === 'signup' 
             ? 'Personalize your feed, save stories, and stay logged in for 15 days.' 
-            : 'Sign in with your email or Google account to stay logged in.'}
+            : 'Sign in with your email or Google account to stay logged in for 15 days.'}
         </p>
 
         {error && (
@@ -139,7 +179,14 @@ export const AuthModal = ({ isOpen, mode = 'login', onClose, onAuthSuccess }) =>
         {/* 1-Click Google Sign In Button */}
         <button
           type="button"
-          onClick={() => setGooglePromptOpen(!googlePromptOpen)}
+          onClick={() => {
+            const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+            if (window.google && window.google.accounts && clientId) {
+              window.google.accounts.id.prompt();
+            } else {
+              setGooglePromptOpen(!googlePromptOpen);
+            }
+          }}
           style={{
             width: '100%',
             display: 'flex',
@@ -301,37 +348,6 @@ export const AuthModal = ({ isOpen, mode = 'login', onClose, onAuthSuccess }) =>
           >
             {loading ? 'Authenticating...' : (currentMode === 'signup' ? 'Register & Continue' : 'Sign In')}
           </button>
-
-          {/* Quick Demo Helper for Admin */}
-          {currentMode === 'login' && (
-            <div 
-              style={{
-                background: '#f8fafc',
-                border: '1px dashed #cbd5e1',
-                padding: '10px 12px',
-                borderRadius: 4,
-                marginBottom: 16,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                fontSize: 12
-              }}
-            >
-              <div>
-                <span style={{ fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <Shield size={13} color="#b80000" /> Admin Credentials:
-                </span>
-                <span style={{ color: '#475569' }}>admin@bbcnews.ai / admin123456</span>
-              </div>
-              <button
-                type="button"
-                onClick={handleFillAdmin}
-                style={{ fontSize: 11, fontWeight: 700, color: '#006699', textDecoration: 'underline' }}
-              >
-                Auto-fill
-              </button>
-            </div>
-          )}
 
           <div style={{ textAlign: 'center', fontSize: 13, color: '#4a4a4a' }}>
             {currentMode === 'signup' ? (
