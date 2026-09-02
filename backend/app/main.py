@@ -58,13 +58,35 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include Routers
+# Include Routers (Supports both /api/stories and direct /stories routes)
 app.include_router(stories_router, prefix=settings.API_PREFIX)
+app.include_router(stories_router)
+
 app.include_router(sources_router, prefix=settings.API_PREFIX)
+app.include_router(sources_router)
+
 app.include_router(auth_router, prefix=settings.API_PREFIX)
+app.include_router(auth_router)
+
 app.include_router(bookmarks_router, prefix=settings.API_PREFIX)
+app.include_router(bookmarks_router)
+
 app.include_router(admin_router, prefix=settings.API_PREFIX)
+app.include_router(admin_router)
+
 app.include_router(newsletter_router, prefix=settings.API_PREFIX)
+app.include_router(newsletter_router)
+
+# Root endpoint & health checks for Render
+@app.get("/", tags=["Health"])
+@app.head("/", tags=["Health"])
+def root_status():
+    return {
+        "status": "healthy",
+        "service": settings.PROJECT_NAME,
+        "api_docs": "/docs",
+        "stories_endpoint": "/api/stories"
+    }
 
 # SEO & Google News Sitemaps Endpoints
 @app.get("/news-sitemap.xml", tags=["SEO"])
@@ -82,7 +104,7 @@ def get_robots_txt():
     txt_content = SEOGenerator.generate_robots_txt()
     return Response(content=txt_content, media_type="text/plain")
 
-@app.get("/health")
+@app.get("/health", tags=["Health"])
 def health_check():
     return {"status": "ok", "app": settings.PROJECT_NAME}
 
