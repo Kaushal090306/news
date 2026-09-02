@@ -2923,6 +2923,276 @@ img,
   filter: none !important;
 }
 
+/* ==========================================================================
+   COMPREHENSIVE MOBILE-FRIENDLY & RESPONSIVE SYSTEM
+   ========================================================================== */
 
+/* 1. TABLET & LAPTOP OPTIMIZATIONS (Max Width: 1024px) */
+@media (max-width: 1024px) {
+  .bbc-four-col-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 24px !important;
+  }
 
+  .bbc-culture-strip {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 16px !important;
+  }
 
+  .bbc-sport-grid {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+
+  .bbc-video-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 16px !important;
+  }
+
+  .bbc-article-layout {
+    grid-template-columns: 1fr !important;
+    gap: 30px !important;
+  }
+}
+
+/* 2. MOBILE PHONE OPTIMIZATIONS (Max Width: 768px) */
+@media (max-width: 768px) {
+  /* Container padding */
+  .bbc-header-container,
+  .bbc-subnav-container,
+  .bbc-breaking-container,
+  .bbc-main-content,
+  .bbc-article-container,
+  .bbc-footer-container {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  /* Subnav category row on mobile: enable smooth touch-scrolling */
+  .bbc-subnav-container {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    padding-top: 6px !important;
+    padding-bottom: 8px !important;
+  }
+
+  .bbc-categories-scroll {
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    gap: 16px !important;
+    padding-bottom: 4px !important;
+  }
+
+  .bbc-categories-scroll::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .bbc-nav-item {
+    font-size: 13px !important;
+    padding: 8px 2px !important;
+    white-space: nowrap !important;
+  }
+
+  .bbc-subnav-search-wrap {
+    width: 100% !important;
+  }
+
+  .bbc-subnav-search-input-box {
+    width: 100% !important;
+    padding: 6px 12px !important;
+  }
+
+  .bbc-subnav-search-input-box:focus-within {
+    width: 100% !important;
+  }
+
+  .bbc-search-suggestions-menu {
+    width: calc(100vw - 24px) !important;
+    right: 0 !important;
+    left: 0 !important;
+    margin: 0 auto !important;
+  }
+
+  /* Hero Slider on Mobile */
+  .bbc-hero-layout {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  .bbc-hero-poster-container {
+    height: 310px !important;
+  }
+
+  .bbc-hero-overlay-headline {
+    font-size: clamp(16px, 4.8vw, 22px) !important;
+    line-height: 1.3 !important;
+  }
+
+  .bbc-hero-overlay-summary {
+    display: none !important; /* Hide long summary on small mobile screens to keep hero clean */
+  }
+
+  .bbc-hero-nav-arrow {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  /* Top Developments Right Column on Mobile */
+  .bbc-grid-col-right-scroll {
+    max-height: 290px !important;
+    border-left: none !important;
+    border-top: 2px solid #121212 !important;
+    padding-left: 0 !important;
+    padding-top: 12px !important;
+  }
+
+  /* 2-Feature Grid */
+  .bbc-two-feature-grid {
+    grid-template-columns: 1fr !important;
+    gap: 18px !important;
+  }
+
+  .bbc-two-feature-img-box {
+    height: 190px !important;
+  }
+
+  /* 4-Column Category Grid */
+  .bbc-four-col-grid {
+    grid-template-columns: 1fr !important;
+    gap: 28px !important;
+  }
+
+  .bbc-col-lead-img-box {
+    height: 180px !important;
+  }
+
+  /* Culture Strip */
+  .bbc-culture-strip {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 12px !important;
+  }
+
+  .bbc-culture-img-box {
+    height: 110px !important;
+  }
+
+  /* Video / Audio Grid */
+  .bbc-video-grid {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  /* Spotlight Banner */
+  .bbc-spotlight-banner {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  .bbc-spotlight-img-box {
+    height: 200px !important;
+  }
+
+  /* History Banner */
+  .bbc-history-banner {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  /* Article Detail Page on Mobile */
+  .bbc-article-header-title {
+    font-size: clamp(20px, 5.8vw, 30px) !important;
+    line-height: 1.25 !important;
+  }
+
+  .bbc-article-hero-img-box {
+    height: 220px !important;
+  }
+
+  .bbc-article-meta-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+
+  .bbc-article-content-body {
+    font-size: 15px !important;
+    line-height: 1.7 !important;
+  }
+
+  .bbc-article-lead-p {
+    font-size: 16px !important;
+    line-height: 1.6 !important;
+  }
+
+  .bbc-preview-auth-gate-card {
+    padding: 24px 16px !important;
+    margin: 20px 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .bbc-preview-auth-btns {
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 10px !important;
+  }
+
+  .bbc-preview-btn-register,
+  .bbc-preview-btn-signin {
+    width: 100% !important;
+    text-align: center !important;
+    justify-content: center !important;
+    padding: 12px 16px !important;
+  }
+
+  /* Bookmarks, Profile & Settings Views */
+  .bbc-bookmarks-grid,
+  .bbc-settings-layout,
+  .bbc-profile-layout {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  .bbc-view-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+
+  /* Modals on Mobile */
+  .bbc-modal-dialog {
+    width: 94vw !important;
+    max-width: 94vw !important;
+    padding: 20px 16px !important;
+    margin: 10px auto !important;
+  }
+
+  /* Footer on Mobile */
+  .bbc-footer-links-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 16px !important;
+  }
+}
+
+/* 3. EXTRA-SMALL MOBILE PHONES (Max Width: 480px) */
+@media (max-width: 480px) {
+  .bbc-culture-strip {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .bbc-culture-img-box {
+    height: 160px !important;
+  }
+
+  .bbc-hero-poster-container {
+    height: 260px !important;
+  }
+
+  .bbc-footer-links-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
