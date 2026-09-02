@@ -83,11 +83,19 @@ export const api = {
 
   // Sources & Admin
   getSources: () => request('/sources'),
+  createSource: (data) => request('/admin/sources', { method: 'POST', body: JSON.stringify(data) }),
+  updateSource: (sourceId, data) => request(`/admin/sources/${sourceId}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteSource: (sourceId) => request(`/admin/sources/${sourceId}`, { method: 'DELETE' }),
+  testSource: (url) => request('/admin/sources/test', { method: 'POST', body: JSON.stringify({ url }) }),
   getAdminStats: () => request('/admin/stats'),
   triggerFetch: (sourceId = null) => request(`/admin/trigger-fetch${sourceId ? `?source_id=${sourceId}` : ''}`, { method: 'POST' }),
   toggleSource: (sourceId) => request(`/admin/sources/${sourceId}/toggle`, { method: 'POST' }),
   getAdminLogs: () => request('/admin/logs'),
   getAdminClusters: () => request('/admin/clusters'),
+  getAdminUsers: () => request('/admin/users'),
+  createAdminUser: (data) => request('/admin/users', { method: 'POST', body: JSON.stringify(data) }),
+  updateUserRole: (userId, role) => request(`/admin/users/${userId}/role`, { method: 'PUT', body: JSON.stringify({ role }) }),
+  deleteUser: (userId) => request(`/admin/users/${userId}`, { method: 'DELETE' }),
 
   // Newsletter
   subscribeNewsletter: (data) => request('/newsletter/subscribe', { method: 'POST', body: JSON.stringify(data) }),

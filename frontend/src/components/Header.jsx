@@ -1,14 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  Menu, 
-  Search, 
-  Bookmark, 
-  ShieldAlert, 
-  X, 
-  ArrowRight, 
-  Calendar, 
-  ChevronDown, 
-  Globe 
+import {
+  Menu,
+  Search,
+  Bookmark,
+  ShieldAlert,
+  X,
+  ArrowRight,
+  Calendar,
+  ChevronDown,
+  Globe
 } from 'lucide-react';
 import { UserProfileDropdown } from './UserProfileDropdown';
 
@@ -145,8 +145,8 @@ export const Header = ({
         <div className="bbc-header-container">
           {/* Left: Menu Icon */}
           <div className="bbc-header-left">
-            <button 
-              className="bbc-menu-search-btn" 
+            <button
+              className="bbc-menu-search-btn"
               onClick={onOpenDrawer}
               title="Open Navigation Menu"
               id="nav-menu-btn"
@@ -164,9 +164,9 @@ export const Header = ({
 
           {/* Right: User Auth & Bookmarks */}
           <div className="bbc-header-right">
-            <button 
-              className="bbc-action-btn" 
-              onClick={onOpenBookmarks} 
+            <button
+              className="bbc-action-btn"
+              onClick={onOpenBookmarks}
               title="View Saved Stories"
               style={{ marginRight: 4 }}
             >
@@ -175,9 +175,9 @@ export const Header = ({
             </button>
 
             {isAdmin && (
-              <button 
-                className="bbc-action-btn" 
-                onClick={onOpenAdmin} 
+              <button
+                className="bbc-action-btn"
+                onClick={onOpenAdmin}
                 title="Admin Control Room"
                 style={{ marginRight: 4, background: '#fee2e2', borderColor: '#b80000', color: '#b80000' }}
               >
@@ -197,12 +197,12 @@ export const Header = ({
               />
             ) : (
               <div className="bbc-auth-btns">
-                <button 
-                  className="bbc-btn-register" 
+                <button
+                  className="bbc-btn-register"
                   onClick={() => onOpenAuth('signup')}
                   id="header-register-btn"
                 >
-                  Register
+                  Sign in
                 </button>
               </div>
             )}
