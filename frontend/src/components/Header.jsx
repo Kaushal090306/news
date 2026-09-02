@@ -168,11 +168,11 @@ export const Header = ({
             <button 
               className="bbc-action-btn" 
               onClick={onOpenBookmarks} 
-              title="View Bookmarks"
+              title="View Saved Stories"
               style={{ marginRight: 4 }}
             >
               <Bookmark size={15} />
-              <span style={{ fontSize: 12 }}>Saved</span>
+              <span className="bbc-saved-text" style={{ fontSize: 12 }}>Saved</span>
             </button>
 
             {isAdmin && (
@@ -183,7 +183,7 @@ export const Header = ({
                 style={{ marginRight: 4, background: '#fee2e2', borderColor: '#b80000', color: '#b80000' }}
               >
                 <ShieldAlert size={15} color="#b80000" />
-                <span style={{ fontSize: 12, fontWeight: 700 }}>Admin Panel</span>
+                <span className="bbc-admin-text" style={{ fontSize: 12, fontWeight: 700 }}>Admin Panel</span>
               </button>
             )}
 
@@ -204,13 +204,6 @@ export const Header = ({
                   id="header-register-btn"
                 >
                   Register
-                </button>
-                <button 
-                  className="bbc-btn-signin" 
-                  onClick={() => onOpenAuth('login')}
-                  id="header-signin-btn"
-                >
-                  Sign In
                 </button>
               </div>
             )}

@@ -2968,6 +2968,23 @@ img,
     padding-right: 12px !important;
   }
 
+  /* Hide text labels in header on mobile to show clean icons */
+  .bbc-saved-text,
+  .bbc-admin-text {
+    display: none !important;
+  }
+
+  .bbc-action-btn {
+    padding: 6px 8px !important;
+    min-width: 36px !important;
+    justify-content: center !important;
+  }
+
+  .bbc-btn-register {
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+  }
+
   /* Subnav category row on mobile: enable smooth touch-scrolling */
   .bbc-subnav-container {
     flex-direction: column !important;
