@@ -553,47 +553,6 @@ button {
   right: 16px;
 }
 
-/* Right Column Header and Content Defaults */
-
-.bbc-right-scroll-header {
-  font-size: 14px;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  border-bottom: 2px solid var(--bbc-black);
-  padding-bottom: 8px;
-  margin-bottom: 10px;
-  flex-shrink: 0;
-}
-
-.bbc-right-scroll-content {
-  overflow-y: auto;
-  padding-right: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  flex: 1;
-}
-
-/* Custom Sleek Scrollbar */
-.bbc-right-scroll-content::-webkit-scrollbar {
-  width: 4px;
-}
-
-.bbc-right-scroll-content::-webkit-scrollbar-track {
-  background: var(--bbc-extra-light);
-  border-radius: 2px;
-}
-
-.bbc-right-scroll-content::-webkit-scrollbar-thumb {
-  background: var(--bbc-mid-gray);
-  border-radius: 2px;
-}
-
-.bbc-right-scroll-content::-webkit-scrollbar-thumb:hover {
-  background: var(--bbc-black);
-}
-
 .bbc-header-left {
   display: flex;
   align-items: center;
@@ -861,14 +820,15 @@ button {
   display: grid;
   grid-template-columns: 1fr;
   gap: 24px;
+  margin-bottom: 24px;
   align-items: stretch;
 }
 
 @media (min-width: 960px) {
   .bbc-hero-layout {
     grid-template-columns: 1fr 340px;
-    gap: 24px;
-    align-items: stretch !important;
+    gap: 28px;
+    align-items: stretch;
   }
 }
 
@@ -1073,19 +1033,17 @@ button {
   border-radius: 4px;
   display: flex;
   flex-direction: column;
-  height: 100% !important;
-  min-height: 100% !important;
-  max-height: 100% !important;
-  box-sizing: border-box;
+  height: 440px;
+  max-height: 440px;
   overflow: hidden;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  box-sizing: border-box;
 }
 
-@media (max-width: 959px) {
+@media (min-width: 768px) {
   .bbc-grid-col-right-scroll {
-    height: 420px !important;
-    min-height: 420px !important;
-    max-height: 420px !important;
+    height: 520px;
+    max-height: 520px;
   }
 }
 
@@ -1111,8 +1069,27 @@ button {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  flex: 1 1 0% !important;
-  min-height: 0 !important;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+/* Custom Sleek Scrollbar */
+.bbc-right-scroll-content::-webkit-scrollbar {
+  width: 5px;
+}
+
+.bbc-right-scroll-content::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 3px;
+}
+
+.bbc-right-scroll-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.bbc-right-scroll-content::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 .bbc-card-right {
