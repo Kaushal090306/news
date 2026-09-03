@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Header } from './components/Header';
 import { DrawerMenu } from './components/DrawerMenu';
 import { BreakingTicker } from './components/BreakingTicker';
@@ -10,7 +10,6 @@ import { SettingsView } from './components/SettingsView';
 import { AdminPanel } from './components/AdminPanel';
 import { AuthModal } from './components/AuthModal';
 import { Footer } from './components/Footer';
-import { Calendar } from 'lucide-react';
 import { api, getAuthToken, removeAuthToken, getCachedUser, setCachedUser } from './services/api';
 import { 
   getCachedFeeds, 
@@ -26,7 +25,7 @@ export function App() {
   const initialStoryParam = urlParams.get('story');
   const initialCachedStory = initialStoryParam ? getCachedStoryDetail(initialStoryParam) : null;
 
-  const [activeCategory, setActiveCategory] = useState('all');
+  const [activeCategory, setActiveCategory] = useState(() => urlParams.get('category') || 'all');
   const [selectedCountry, setSelectedCountry] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [stories, setStories] = useState(() => initialFeeds.stories || []);
@@ -45,6 +44,10 @@ export function App() {
     if (viewParam === 'settings') return 'settings';
     return 'feed';
   });
+
+  // Track scroll position and category when opening an article so Back returns to exact viewport
+  const lastFeedScrollPos = useRef(0);
+  const lastFeedCategory = useRef(urlParams.get('category') || 'all');
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -85,10 +88,13 @@ export function App() {
         .catch((err) => console.warn('Background load deep-linked story error:', err));
     }
 
-    const handlePopState = () => {
+    const handlePopState = (e) => {
       const params = new URLSearchParams(window.location.search);
       const sParam = params.get('story');
       const vParam = params.get('view') || params.get('tab');
+      const cParam = params.get('category');
+      const state = e.state || {};
+
       if (sParam) {
         const cached = getCachedStoryDetail(sParam);
         if (cached) {
@@ -109,9 +115,22 @@ export function App() {
       } else if (vParam === 'bookmarks') {
         setViewMode('bookmarks');
       } else {
+        // Return to news feed at exact scroll position and category
         setSelectedStory(null);
         setStoryDetailData(null);
         setViewMode('feed');
+
+        const restoredCategory = state.category || cParam || lastFeedCategory.current || 'all';
+        setActiveCategory(restoredCategory);
+        lastFeedCategory.current = restoredCategory;
+
+        const targetScroll = state.scrollPos !== undefined ? state.scrollPos : lastFeedScrollPos.current;
+        requestAnimationFrame(() => {
+          window.scrollTo({ top: targetScroll, behavior: 'instant' });
+          setTimeout(() => {
+            window.scrollTo({ top: targetScroll, behavior: 'instant' });
+          }, 60);
+        });
       }
     };
 
@@ -183,6 +202,12 @@ export function App() {
     const storyIdentifier = story.slug || story.id;
     const cachedDetail = getCachedStoryDetail(storyIdentifier);
 
+    // If opening from the feed, memorize the exact viewport scroll position and active category
+    if (viewMode === 'feed') {
+      lastFeedScrollPos.current = window.scrollY || document.documentElement.scrollTop || 0;
+      lastFeedCategory.current = activeCategory;
+    }
+
     setSelectedStory(story);
     setStoryDetailData(cachedDetail || { 
       story, 
@@ -192,9 +217,14 @@ export function App() {
     setViewMode('article');
     window.scrollTo({ top: 0, behavior: 'instant' });
 
-    // Update browser URL so it is directly sharable
-    const newUrl = `${window.location.pathname}?story=${encodeURIComponent(storyIdentifier)}`;
-    window.history.pushState({ storyId: storyIdentifier }, '', newUrl);
+    // Update browser URL preserving active category and saved scroll position
+    const catQuery = activeCategory && activeCategory !== 'all' ? `&category=${encodeURIComponent(activeCategory)}` : '';
+    const newUrl = `${window.location.pathname}?story=${encodeURIComponent(storyIdentifier)}${catQuery}`;
+    window.history.pushState({ 
+      storyId: storyIdentifier, 
+      scrollPos: lastFeedScrollPos.current, 
+      category: activeCategory 
+    }, '', newUrl);
 
     try {
       const detail = await api.getStoryDetail(storyIdentifier);
@@ -208,17 +238,41 @@ export function App() {
   };
 
   const handleBackToFeed = () => {
+    // Return to feed without resetting to home or scrolling to top
     setSelectedStory(null);
     setStoryDetailData(null);
     setViewMode('feed');
-    window.history.pushState({}, '', window.location.pathname);
+
+    const targetCategory = lastFeedCategory.current || activeCategory;
+    if (targetCategory && targetCategory !== activeCategory) {
+      setActiveCategory(targetCategory);
+    }
+
+    const backUrl = targetCategory && targetCategory !== 'all' 
+      ? `${window.location.pathname}?category=${encodeURIComponent(targetCategory)}` 
+      : window.location.pathname;
+    window.history.pushState({ category: targetCategory, scrollPos: lastFeedScrollPos.current }, '', backUrl);
+
+    const savedPos = lastFeedScrollPos.current || 0;
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: savedPos, behavior: 'instant' });
+      setTimeout(() => {
+        window.scrollTo({ top: savedPos, behavior: 'instant' });
+      }, 50);
+    });
   };
 
   const handleCategorySelect = (cat) => {
     setActiveCategory(cat);
+    lastFeedCategory.current = cat;
+    lastFeedScrollPos.current = 0;
     if (viewMode !== 'feed') {
       setViewMode('feed');
     }
+    const catUrl = cat && cat !== 'all' 
+      ? `${window.location.pathname}?category=${encodeURIComponent(cat)}` 
+      : window.location.pathname;
+    window.history.pushState({ category: cat }, '', catUrl);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 

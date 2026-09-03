@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { 
-  Share2, 
-  Bookmark, 
-  BookmarkCheck, 
-  Check, 
-  ArrowLeft, 
-  Volume2, 
-  VolumeX, 
+import {
+  Share2,
+  Bookmark,
+  BookmarkCheck,
+  Check,
+  ArrowLeft,
+  Volume2,
+  VolumeX,
   Clock,
   X,
   Copy,
@@ -36,9 +36,9 @@ export const ArticleDetail = ({
   if (!storyData || !storyData.story) {
     return (
       <div className="bbc-main-content bbc-article-view">
-        <button 
-          onClick={onBack} 
-          className="bbc-article-back-btn" 
+        <button
+          onClick={onBack}
+          className="bbc-article-back-btn"
           style={{ marginBottom: 16, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
         >
           <ArrowLeft size={16} /> Back to Headlines
@@ -175,8 +175,8 @@ export const ArticleDetail = ({
 
     // 1. Executive Opening & Situation Report (Free Preview)
     const p1 = `In a major development commanding widespread international attention, ${story.canonical_title.toLowerCase().replace(/^(watch|live|exclusive|breaking):\s*/i, '')}. ${sourceCore}`;
-    
-    const p2 = cleanSentences.slice(4, 7).join(' ') || 
+
+    const p2 = cleanSentences.slice(4, 7).join(' ') ||
       `Verified dispatches from on-the-ground correspondents indicate rapid momentum as administrative authorities and sector specialists conduct preliminary evaluations. Observers emphasize that the timing of these disclosures intersects with broader structural shifts currently reshaping the ${story.category.toLowerCase()} landscape.`;
 
     // 2. Chronological Breakdown & Background Timeline (Gated / Unlocked on Login)
@@ -274,7 +274,7 @@ export const ArticleDetail = ({
     <div className="bbc-article-page">
       {/* Top Back Navigation & Red Category Row */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, borderBottom: '1px solid #e5e7eb', paddingBottom: 12 }}>
-        <button 
+        <button
           onClick={onBack}
           style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700, color: '#121212', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
         >
@@ -304,26 +304,26 @@ export const ArticleDetail = ({
             </div>
 
             <div className="bbc-article-actions" style={{ position: 'relative' }}>
-              <button 
-                className={`bbc-action-btn ${isSpeaking ? 'active' : ''}`} 
-                onClick={handleToggleSpeech} 
+              <button
+                className={`bbc-action-btn ${isSpeaking ? 'active' : ''}`}
+                onClick={handleToggleSpeech}
                 title={isSpeaking ? "Stop audio read" : "Listen to article audio"}
               >
                 {isSpeaking ? <VolumeX size={14} color="#121212" /> : <Volume2 size={14} />}
                 <span>{isSpeaking ? 'Stop' : 'Listen'}</span>
               </button>
 
-              <button 
-                className="bbc-action-btn" 
-                onClick={handleShare} 
+              <button
+                className="bbc-action-btn"
+                onClick={handleShare}
                 title="Share directly to WhatsApp, X, Telegram or Copy Link"
               >
                 {copied ? <Check size={14} color="#15803d" /> : <Share2 size={14} />}
                 <span>{copied ? 'Copied Link!' : 'Share'}</span>
               </button>
 
-              <button 
-                className={`bbc-action-btn ${bookmarked ? 'active' : ''}`} 
+              <button
+                className={`bbc-action-btn ${bookmarked ? 'active' : ''}`}
                 onClick={handleToggleBookmark}
                 title="Save this story to your reading list"
               >
@@ -334,14 +334,14 @@ export const ArticleDetail = ({
           </div>
 
           {/* Byline */}
-          <div className="bbc-article-byline">
+          {/* <div className="bbc-article-byline">
             <div className="bbc-author-name">
               World News Editorial Bureau
             </div>
             <div className="bbc-author-title">
               Verified investigative reporting synthesized across {contributingSources.length} international news agencies ({contributingSources.join(', ')})
             </div>
-          </div>
+          </div> */}
 
           {/* Hero Image & Caption */}
           <div className="bbc-article-hero-wrap">
@@ -434,7 +434,7 @@ export const ArticleDetail = ({
                 <p className="bbc-preview-gate-desc">
                   Unlock full in-depth journalistic coverage, verified timeline analysis, and full reporting with a free account.
                 </p>
-                <button 
+                <button
                   className="bbc-preview-btn-signup"
                   onClick={() => onOpenAuth('signup')}
                 >
@@ -510,7 +510,7 @@ export const ArticleDetail = ({
           MULTI-APP DIRECT SHARE MODAL
           ======================================================== */}
       {shareModalOpen && (
-        <div 
+        <div
           style={{
             position: 'fixed',
             inset: 0,
@@ -524,7 +524,7 @@ export const ArticleDetail = ({
           }}
           onClick={() => setShareModalOpen(false)}
         >
-          <div 
+          <div
             style={{
               background: '#ffffff',
               border: '1px solid #121212',
@@ -612,9 +612,9 @@ export const ArticleDetail = ({
                 Direct Link
               </label>
               <div style={{ display: 'flex', gap: 8 }}>
-                <input 
-                  type="text" 
-                  readOnly 
+                <input
+                  type="text"
+                  readOnly
                   value={directShareUrl}
                   style={{
                     flexGrow: 1,
