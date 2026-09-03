@@ -187,6 +187,7 @@ export const EditorialGrid = ({
 }) => {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
+  const [selectedSportSub, setSelectedSportSub] = useState('All');
 
   // Reset slide index whenever active category or country changes
   useEffect(() => {
@@ -210,19 +211,68 @@ export const EditorialGrid = ({
   // Global set of story IDs used on the page to guarantee ZERO cross-section or cross-column duplicates
   const usedStoryIds = new Set();
 
-  // 1. Stories for the Hero Slider: Take freshest stories from active category/country
-  const heroSliderStories = displayPool.length > 0
-    ? [
-        ...(heroStory && (!isCountryFiltered || heroStory.country?.toLowerCase() === selectedCountry.toLowerCase()) && (!isCategoryFiltered || heroStory.category?.toLowerCase() === activeCategory.toLowerCase()) ? [heroStory] : []),
-        ...displayPool.filter((s) => !heroStory || s.id !== heroStory.id)
-      ].slice(0, 8)
-    : displayPool.slice(0, 8);
+  // 1. Stories for the Hero Slider:
+  // On Home (activeCategory === 'all'), ensure it showcases news across ALL major categories!
+  const heroSliderStories = [];
+  if (displayPool.length > 0) {
+    if (!isCategoryFiltered) {
+      // Home hero showcases all categories: World, Technology, Sport, Business, Science, Health, Culture, India
+      const majorCategories = ['World', 'Technology', 'Sport', 'Business', 'Science', 'Health', 'Culture', 'India'];
+      const heroPickedIds = new Set();
 
-  // Register hero slider IDs
+      if (heroStory && (!isCountryFiltered || heroStory.country?.toLowerCase() === selectedCountry.toLowerCase())) {
+        heroSliderStories.push(heroStory);
+        heroPickedIds.add(heroStory.id);
+      }
+
+      for (const cat of majorCategories) {
+        if (heroSliderStories.length >= 8) break;
+        const matchingStory = displayPool.find(
+          (s) => s.category?.toLowerCase() === cat.toLowerCase() && !heroPickedIds.has(s.id)
+        );
+        if (matchingStory) {
+          heroSliderStories.push(matchingStory);
+          heroPickedIds.add(matchingStory.id);
+        }
+      }
+
+      // Fill any remaining slots up to 8
+      for (const s of displayPool) {
+        if (heroSliderStories.length >= 8) break;
+        if (!heroPickedIds.has(s.id)) {
+          heroSliderStories.push(s);
+          heroPickedIds.add(s.id);
+        }
+      }
+    } else {
+      if (heroStory && heroStory.category?.toLowerCase() === activeCategory.toLowerCase()) {
+        heroSliderStories.push(heroStory);
+      }
+      heroSliderStories.push(
+        ...displayPool.filter((s) => !heroStory || s.id !== heroStory.id).slice(0, 8)
+      );
+    }
+  }
+
+  // Register hero slider IDs to avoid duplicates
   heroSliderStories.forEach((s) => usedStoryIds.add(s.id));
 
-  // 2. Stories for Hero Right Column (Top Developments): Take freshest developments
+  // 2. Stories for Hero Right Column (Top Developments): Diversified across categories
   const rightColumnStories = [];
+  const rightColCatCount = {};
+  for (const s of displayPool) {
+    if (rightColumnStories.length >= 7) break;
+    if (!usedStoryIds.has(s.id)) {
+      const cat = (s.category || 'General').toLowerCase();
+      // On home page, prevent sector clumping (max 2 stories per category)
+      if (!isCategoryFiltered && (rightColCatCount[cat] || 0) >= 2) {
+        continue;
+      }
+      rightColumnStories.push(s);
+      usedStoryIds.add(s.id);
+      rightColCatCount[cat] = (rightColCatCount[cat] || 0) + 1;
+    }
+  }
   for (const s of displayPool) {
     if (rightColumnStories.length >= 7) break;
     if (!usedStoryIds.has(s.id)) {
@@ -281,6 +331,38 @@ export const EditorialGrid = ({
   const techTwoStories = getCatList('Technology', 2);
   const historyStory = getCatList('World', 1)[0] || countryStories[1] || countryStories[0];
   const travelStories = getCatList('Culture', 2);
+
+  // Sport sub-type matcher (e.g. Cricket, Football, Formula 1, Tennis, Golf, Athletics)
+  const matchesSportSub = (story, sub) => {
+    if (!story) return false;
+    if (sub === 'All' || sub === 'All Sport') return true;
+    const txt = `${story.canonical_title || ''} ${story.summary || ''} ${story.slug || ''} ${JSON.stringify(story.tags || [])}`.toLowerCase();
+    switch (sub) {
+      case 'Football':
+        return /football|soccer|premier league|champions league|la liga|serie a|fifa|messi|ronaldo|manchester|arsenal|chelsea|liverpool|bayern|real madrid|barcelona|psg|tottenham|epl|haaland|mbappe|striker|goalkeeper|uefa|nfl|quarterback|touchdown/.test(txt);
+      case 'Cricket':
+        return /cricket|ipl|bcci|icc|test match|odi|t20|wicket|batsman|bowler|innings|rohit|virat|kohli|bumrah|dhoni|ashwin|babar|pakistan cricket|england cricket|australia cricket|ashes|test - england/.test(txt);
+      case 'Formula 1':
+        return /formula 1|formula one|f1|grand prix|verstappen|hamilton|ferrari|mercedes|red bull|mclaren|leclerc|norris|russell|fia|racing/.test(txt);
+      case 'Tennis':
+        return /tennis|us open|wimbledon|australian open|french open|roland garros|djokovic|alcaraz|sinner|nadal|federer|swiatek|sabalenka|gauff|atp|wta|grand slam|boulter/.test(txt);
+      case 'Golf':
+        return /golf|pga|liv golf|ryder cup|masters|tiger woods|mcilroy|scheffler|open championship/.test(txt);
+      case 'Athletics':
+        return /athletics|olympics|olympic|marathon|runner|sprint|100m|200m|track and field|relay|hurdles|pole vault|long jump|salis|pudge|mlb|baseball/.test(txt);
+      default:
+        return txt.includes(sub.toLowerCase());
+    }
+  };
+
+  // Specific sport filtered pool
+  const specificSportMatches = selectedSportSub === 'All'
+    ? []
+    : stories.filter((s) => matchesSportSub(s, selectedSportSub));
+
+  const displayedSportStories = selectedSportSub === 'All'
+    ? sportStories
+    : (specificSportMatches.length > 0 ? specificSportMatches : sportStories);
 
   // 4-Column Grid: Business | Technology | Science | Health
   // ZERO DUPLICATES: Every single column receives completely distinct, unique stories!
@@ -473,9 +555,11 @@ export const EditorialGrid = ({
           ======================================================== */}
       {trendingTwoStories.length >= 2 && (
         <section className="bbc-section-block">
-          <div className="bbc-section-header">
+          <div className="bbc-section-header" onClick={() => onSelectCategory('World')} title="Click to view all World News">
             <span className="bbc-section-tag-red" />
-            <h3 className="bbc-section-title">TOP TRENDING & ESSENTIAL READS</h3>
+            <h3 className="bbc-section-title">
+              TOP TRENDING & ESSENTIAL READS <ChevronRight size={18} className="bbc-section-chevron" />
+            </h3>
           </div>
           <div className="bbc-two-feature-grid">
             {trendingTwoStories.map((story, i) => {
@@ -522,42 +606,63 @@ export const EditorialGrid = ({
       {/* ========================================================
           3. SPORT SECTION (Featured Hero + 3 Side Cards + Highlights Row)
           ======================================================== */}
-      {sportStories.length > 0 && (
+      {displayedSportStories.length > 0 && (
         <section className="bbc-section-block bbc-sport-section">
-          {/* Authentic BBC Sport Header with Category Navigation */}
+          {/* Authentic BBC Sport Header with In-Place Category Filtering */}
           <div className="bbc-sport-section-header">
-            <div className="bbc-sport-header-left" onClick={() => onSelectCategory('Sport')} style={{ cursor: 'pointer' }}>
+            <div className="bbc-sport-header-left" onClick={() => onSelectCategory('Sport')} style={{ cursor: 'pointer' }} title="Click to view all Sport news">
               <span className="bbc-sport-header-bar" />
               <h3 className="bbc-sport-section-title">
                 SPORT <ChevronRight size={18} className="bbc-sport-chevron" />
               </h3>
             </div>
             <div className="bbc-sport-pills-nav">
-              {['Football', 'Cricket', 'Formula 1', 'Tennis', 'Golf', 'Athletics'].map((sub) => (
-                <span
-                  key={sub}
-                  className="bbc-sport-pill"
-                  onClick={() => onSelectCategory('Sport')}
-                >
-                  {sub}
-                </span>
-              ))}
+              {['All Sport', 'Football', 'Cricket', 'Formula 1', 'Tennis', 'Golf', 'Athletics'].map((sub) => {
+                const isPillActive = selectedSportSub === sub || (sub === 'All Sport' && selectedSportSub === 'All');
+                return (
+                  <button
+                    type="button"
+                    key={sub}
+                    className={`bbc-sport-pill ${isPillActive ? 'active' : ''}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      setSelectedSportSub(sub === 'All Sport' ? 'All' : sub);
+                    }}
+                    style={{
+                      background: isPillActive ? '#ffd230' : '#f3f4f6',
+                      color: isPillActive ? '#000000' : '#374151',
+                      fontWeight: isPillActive ? 800 : 600,
+                      cursor: 'pointer',
+                      border: 'none'
+                    }}
+                  >
+                    {sub}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
+          {selectedSportSub !== 'All' && specificSportMatches.length === 0 && (
+            <div style={{ fontSize: 13, color: '#64748b', marginBottom: 14 }}>
+              No current reports found specifically for {selectedSportSub}. Showing top sports coverage:
+            </div>
+          )}
+
           <div className="bbc-sport-split-grid">
             {/* Main Featured Sport Card */}
-            {sportStories[0] && (
+            {displayedSportStories[0] && (
               <article
                 className="bbc-sport-hero-card"
-                onClick={() => onSelectStory(sportStories[0])}
+                onClick={() => onSelectStory(displayedSportStories[0])}
               >
                 <div className="bbc-sport-hero-img-wrap">
                   <WireframeImage
-                    src={getHdImageUrl(sportStories[0].hero_image) || getCategoryFallbackImage('sport', 0)}
-                    alt={sportStories[0].canonical_title}
+                    src={getHdImageUrl(displayedSportStories[0].hero_image) || getCategoryFallbackImage('sport', 0, displayedSportStories[0].id)}
+                    alt={displayedSportStories[0].canonical_title}
                     className="bbc-sport-hero-img"
-                    fallbackSrc={getCategoryFallbackImage('sport', 0)}
+                    fallbackSrc={getCategoryFallbackImage('sport', 0, displayedSportStories[0].id)}
                     loading="lazy"
                   />
                   <div className="bbc-sport-live-badge">
@@ -567,12 +672,12 @@ export const EditorialGrid = ({
                 </div>
                 <div className="bbc-sport-hero-body">
                   <span className="bbc-kicker-red">SPORT REPORT</span>
-                  <h2 className="bbc-sport-hero-title">{sportStories[0].canonical_title}</h2>
-                  <p className="bbc-sport-hero-snippet">{sportStories[0].summary}</p>
+                  <h2 className="bbc-sport-hero-title">{displayedSportStories[0].canonical_title}</h2>
+                  <p className="bbc-sport-hero-snippet">{displayedSportStories[0].summary}</p>
                   <div className="bbc-card-meta">
-                    <span>{formatTimeAgo(sportStories[0].last_updated_at)}</span>
+                    <span>{formatTimeAgo(displayedSportStories[0].last_updated_at)}</span>
                     <span>|</span>
-                    <span style={{ color: '#006699', fontWeight: 600 }}>{sportStories[0].sources_count} sources reporting</span>
+                    <span style={{ color: '#4b5563', fontWeight: 600 }}>{displayedSportStories[0].sources_count} sources reporting</span>
                   </div>
                 </div>
               </article>
@@ -580,8 +685,8 @@ export const EditorialGrid = ({
 
             {/* Side 3 Sports Stories */}
             <div className="bbc-sport-side-list">
-              {sportStories.slice(1, 4).map((story, i) => {
-                const img = getHdImageUrl(story.hero_image) || getCategoryFallbackImage('sport', i + 1);
+              {displayedSportStories.slice(1, 4).map((story, i) => {
+                const img = getHdImageUrl(story.hero_image) || getCategoryFallbackImage('sport', i + 1, story.id);
                 return (
                   <article
                     key={story.id}
@@ -593,7 +698,7 @@ export const EditorialGrid = ({
                         src={img}
                         alt={story.canonical_title}
                         className="bbc-sport-side-img"
-                        fallbackSrc={getCategoryFallbackImage('sport', i + 1)}
+                        fallbackSrc={getCategoryFallbackImage('sport', i + 1, story.id)}
                         loading="lazy"
                       />
                     </div>
@@ -605,7 +710,7 @@ export const EditorialGrid = ({
                         <span>•</span>
                         <span>Sport</span>
                         {story.sources_count > 1 && (
-                          <span style={{ color: '#006699', fontWeight: 600 }}>
+                          <span style={{ color: '#4b5563', fontWeight: 600 }}>
                             • {story.sources_count} sources
                           </span>
                         )}
@@ -618,10 +723,10 @@ export const EditorialGrid = ({
           </div>
 
           {/* Bottom 3 Sport Cards (if more than 4 sport stories available) */}
-          {sportStories.length > 4 && (
+          {displayedSportStories.length > 4 && (
             <div className="bbc-sport-bottom-grid">
-              {sportStories.slice(4, 7).map((story, i) => {
-                const img = getHdImageUrl(story.hero_image) || getCategoryFallbackImage('sport', i + 4);
+              {displayedSportStories.slice(4, 7).map((story, i) => {
+                const img = getHdImageUrl(story.hero_image) || getCategoryFallbackImage('sport', i + 4, story.id);
                 return (
                   <article
                     key={story.id}
@@ -633,7 +738,7 @@ export const EditorialGrid = ({
                         src={img}
                         alt={story.canonical_title}
                         className="bbc-sport-bottom-img"
-                        fallbackSrc={getCategoryFallbackImage('sport', i + 4)}
+                        fallbackSrc={getCategoryFallbackImage('sport', i + 4, story.id)}
                         loading="lazy"
                       />
                     </div>
@@ -659,7 +764,7 @@ export const EditorialGrid = ({
           ======================================================== */}
       {cultureStripStories.length > 0 && (
         <section className="bbc-section-block">
-          <div className="bbc-section-header">
+          <div className="bbc-section-header" onClick={() => onSelectCategory('Culture')} title="Click to view all Culture news">
             <span className="bbc-section-tag-red" />
             <h3 className="bbc-section-title">
               CULTURE & ENTERTAINMENT <ChevronRight size={18} className="bbc-section-chevron" />
@@ -700,9 +805,11 @@ export const EditorialGrid = ({
           ======================================================== */}
       {politicsSpotlight && (
         <section className="bbc-section-block">
-          <div className="bbc-section-header">
+          <div className="bbc-section-header" onClick={() => onSelectCategory('World')} title="Click to view all World News">
             <span className="bbc-section-tag-red" />
-            <h3 className="bbc-section-title">GLOBAL IN-DEPTH SPOTLIGHT</h3>
+            <h3 className="bbc-section-title">
+              GLOBAL IN-DEPTH SPOTLIGHT <ChevronRight size={18} className="bbc-section-chevron" />
+            </h3>
           </div>
           <article
             className="bbc-spotlight-banner"
@@ -747,7 +854,7 @@ export const EditorialGrid = ({
           ======================================================== */}
       {artsStories.length > 0 && (
         <section className="bbc-section-block">
-          <div className="bbc-section-header">
+          <div className="bbc-section-header" onClick={() => onSelectCategory('Culture')} title="Click to view all Entertainment & Arts">
             <span className="bbc-section-tag-red" />
             <h3 className="bbc-section-title">
               ENTERTAINMENT & ARTS <ChevronRight size={18} className="bbc-section-chevron" />
@@ -837,7 +944,7 @@ export const EditorialGrid = ({
           ======================================================== */}
       {techTwoStories.length >= 2 && (
         <section className="bbc-section-block">
-          <div className="bbc-section-header">
+          <div className="bbc-section-header" onClick={() => onSelectCategory('Technology')} title="Click to view all Technology news">
             <span className="bbc-section-tag-red" />
             <h3 className="bbc-section-title">
               INNOVATION & TECHNOLOGY <ChevronRight size={18} className="bbc-section-chevron" />
@@ -914,7 +1021,7 @@ export const EditorialGrid = ({
         <div className="bbc-four-category-grid">
           {/* Column 1: Business */}
           <div className="bbc-category-col">
-            <h3 className="bbc-col-title">
+            <h3 className="bbc-col-title" onClick={() => onSelectCategory('Business')} style={{ cursor: 'pointer' }} title="Click to view all Business news">
               BUSINESS <ChevronRight size={16} />
             </h3>
             {businessCol[0] && (
@@ -942,7 +1049,7 @@ export const EditorialGrid = ({
 
           {/* Column 2: Technology */}
           <div className="bbc-category-col">
-            <h3 className="bbc-col-title">
+            <h3 className="bbc-col-title" onClick={() => onSelectCategory('Technology')} style={{ cursor: 'pointer' }} title="Click to view all Technology news">
               TECHNOLOGY <ChevronRight size={16} />
             </h3>
             {techCol[0] && (
@@ -970,7 +1077,7 @@ export const EditorialGrid = ({
 
           {/* Column 3: Science */}
           <div className="bbc-category-col">
-            <h3 className="bbc-col-title">
+            <h3 className="bbc-col-title" onClick={() => onSelectCategory('Science')} style={{ cursor: 'pointer' }} title="Click to view all Science news">
               SCIENCE <ChevronRight size={16} />
             </h3>
             {scienceCol[0] && (
@@ -998,7 +1105,7 @@ export const EditorialGrid = ({
 
           {/* Column 4: Health */}
           <div className="bbc-category-col">
-            <h3 className="bbc-col-title">
+            <h3 className="bbc-col-title" onClick={() => onSelectCategory('Health')} style={{ cursor: 'pointer' }} title="Click to view all Health news">
               HEALTH <ChevronRight size={16} />
             </h3>
             {healthCol[0] && (
@@ -1030,7 +1137,7 @@ export const EditorialGrid = ({
           11. DISCOVER & SOUNDS / AUDIO (Colorful Square Tiles)
           ======================================================== */}
       <section className="bbc-section-block">
-        <div className="bbc-section-header">
+        <div className="bbc-section-header" onClick={() => onSelectCategory('India')} title="Click to view Regional & Sounds">
           <span className="bbc-section-tag-red" />
           <h3 className="bbc-section-title">
             DISCOVER & AUDIO <ChevronRight size={18} className="bbc-section-chevron" />
@@ -1074,9 +1181,11 @@ export const EditorialGrid = ({
           ======================================================== */}
       {remainingStories.length > 0 && (
         <section className="bbc-section-block" style={{ borderTop: '2px solid #121212', paddingTop: 28 }}>
-          <div className="bbc-section-header">
+          <div className="bbc-section-header" onClick={() => onSelectCategory('World')} title="Click to view all World News">
             <span className="bbc-section-tag-red" />
-            <h3 className="bbc-section-title">MORE FROM WORLD NEWS</h3>
+            <h3 className="bbc-section-title">
+              MORE FROM WORLD NEWS <ChevronRight size={18} className="bbc-section-chevron" />
+            </h3>
           </div>
           <div className="bbc-four-grid">
             {remainingStories.map((story, i) => {

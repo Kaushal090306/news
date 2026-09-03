@@ -6,7 +6,6 @@ import {
   ShieldAlert,
   X,
   ArrowRight,
-  Calendar,
   ChevronDown,
   Globe
 } from 'lucide-react';
@@ -26,10 +25,7 @@ export const Header = ({
   currentUser,
   onLogout,
   onSearch,
-  stories = [],
-  selectedDate = 'all',
-  onSelectDate,
-  availableDates = []
+  stories = []
 }) => {
   const [searchInput, setSearchInput] = useState('');
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
@@ -331,46 +327,23 @@ export const Header = ({
             </div>
           </div>
 
-          {/* Search Bar with Integrated Calendar Date Picker */}
+          {/* Modern Search Bar */}
           <div className="bbc-subnav-search-wrap" ref={searchWrapRef}>
             <form onSubmit={handleSearchSubmit} className="bbc-subnav-search-input-box">
               <Search size={15} color="#767676" />
               <input
                 type="text"
-                placeholder="Search topics or pick date..."
+                placeholder="Search BBC News..."
                 className="bbc-subnav-search-input"
                 value={searchInput}
                 onChange={(e) => {
                   setSearchInput(e.target.value);
                   setSuggestionsOpen(true);
                 }}
-                onFocus={() => setSuggestionsOpen(true)}
-              />
-
-              {/* Calendar Trigger Button */}
-              <button
-                type="button"
-                onClick={() => setSuggestionsOpen((prev) => !prev)}
-                title="Select edition date or browse archive"
-                style={{
-                  background: selectedDate !== 'all' ? '#121212' : 'none',
-                  color: selectedDate !== 'all' ? '#ffffff' : '#475569',
-                  border: 'none',
-                  borderRadius: 3,
-                  padding: '2px 5px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 3,
-                  cursor: 'pointer',
-                  fontSize: 11,
-                  fontWeight: 700
+                onFocus={() => {
+                  if (searchInput.trim().length > 0) setSuggestionsOpen(true);
                 }}
-              >
-                <Calendar size={14} />
-                {selectedDate !== 'all' && (
-                  <span>{selectedDate.slice(5)}</span>
-                )}
-              </button>
+              />
 
               {searchInput && (
                 <button
@@ -383,106 +356,9 @@ export const Header = ({
               )}
             </form>
 
-            {/* Dropdown Menu (Date Selector + Live Search Suggestions) */}
-            {suggestionsOpen && (
+            {/* Dropdown Menu (Live Search Suggestions) */}
+            {suggestionsOpen && cleanQuery.length > 0 && (
               <div className="bbc-search-suggestions-menu" style={{ width: 340, right: 0 }}>
-                {/* 1. Date / Calendar Picker Section */}
-                <div style={{ padding: '12px 14px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <span style={{ fontSize: 11, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#121212', display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <Calendar size={13} /> News Archive Date:
-                    </span>
-                    {selectedDate !== 'all' && (
-                      <button
-                        onClick={() => {
-                          onSelectDate && onSelectDate('all');
-                          setSuggestionsOpen(false);
-                        }}
-                        style={{ fontSize: 11, color: '#b80000', fontWeight: 800, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                      >
-                        Reset to Latest
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Quick Date Badges */}
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
-                    <button
-                      onClick={() => {
-                        onSelectDate && onSelectDate('all');
-                        setSuggestionsOpen(false);
-                      }}
-                      style={{
-                        padding: '3px 8px',
-                        borderRadius: 12,
-                        fontSize: 11,
-                        fontWeight: selectedDate === 'all' ? 800 : 600,
-                        background: selectedDate === 'all' ? '#121212' : '#ffffff',
-                        color: selectedDate === 'all' ? '#ffffff' : '#334155',
-                        border: `1px solid ${selectedDate === 'all' ? '#121212' : '#cbd5e1'}`,
-                        cursor: 'pointer'
-                      }}
-                    >
-                      All Latest
-                    </button>
-
-                    {availableDates.slice(0, 3).map((d) => {
-                      const isSelected = selectedDate === d.date_str;
-                      const dateObj = new Date(d.date_str + 'T00:00:00');
-                      const label = dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-                      return (
-                        <button
-                          key={d.date_str}
-                          onClick={() => {
-                            onSelectDate && onSelectDate(d.date_str);
-                            setSuggestionsOpen(false);
-                          }}
-                          style={{
-                            padding: '3px 8px',
-                            borderRadius: 12,
-                            fontSize: 11,
-                            fontWeight: isSelected ? 800 : 600,
-                            background: isSelected ? '#121212' : '#ffffff',
-                            color: isSelected ? '#ffffff' : '#334155',
-                            border: `1px solid ${isSelected ? '#121212' : '#cbd5e1'}`,
-                            cursor: 'pointer'
-                          }}
-                        >
-                          {label}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Native Calendar Input */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>Custom Date:</span>
-                    <input
-                      type="date"
-                      value={selectedDate === 'all' ? '' : selectedDate}
-                      onChange={(e) => {
-                        if (e.target.value) {
-                          onSelectDate && onSelectDate(e.target.value);
-                          setSuggestionsOpen(false);
-                        }
-                      }}
-                      style={{
-                        flexGrow: 1,
-                        padding: '3px 6px',
-                        borderRadius: 3,
-                        border: '1px solid #cbd5e1',
-                        fontSize: 11,
-                        color: '#1e293b',
-                        background: '#ffffff',
-                        outline: 'none',
-                        cursor: 'pointer'
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* 2. Text Search Suggestions (When User Types) */}
-                {cleanQuery.length > 0 && (
                   <>
                     {/* Matching Categories */}
                     {matchingTopics.map((topic) => (
@@ -520,7 +396,7 @@ export const Header = ({
                           <div style={{ fontSize: 12, lineHeight: 1.35, fontWeight: 600 }}>
                             {highlightMatch(story.canonical_title, cleanQuery)}
                           </div>
-                          <div style={{ fontSize: 10, color: '#006699', fontWeight: 700, marginTop: 2 }}>
+                          <div style={{ fontSize: 10, color: 'var(--bbc-red)', fontWeight: 700, marginTop: 2 }}>
                             {story.category || 'World News'}
                           </div>
                         </div>
@@ -541,7 +417,6 @@ export const Header = ({
                       <Search size={14} />
                     </div>
                   </>
-                )}
               </div>
             )}
           </div>

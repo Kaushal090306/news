@@ -1135,7 +1135,7 @@ button {
 }
 
 .bbc-card-right:hover .bbc-card-right-title {
-  color: #006699;
+  color: var(--bbc-red);
   text-decoration: underline;
 }
 
@@ -1921,6 +1921,19 @@ button {
   margin-bottom: 18px;
   border-bottom: 2px solid #121212;
   padding-bottom: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.bbc-section-header:hover,
+.bbc-section-title:hover,
+.bbc-sport-section-header:hover,
+.bbc-sport-section-title:hover,
+.bbc-col-title:hover {
+  text-decoration: none !important;
+  color: inherit !important;
+  background: none !important;
+  opacity: 1 !important;
 }
 
 .bbc-section-tag-red {
@@ -1939,6 +1952,8 @@ button {
   display: flex;
   align-items: center;
   gap: 4px;
+  cursor: pointer;
+  text-decoration: none;
 }
 
 .bbc-section-chevron {
@@ -1974,7 +1989,7 @@ button {
 
 .bbc-two-feature-card:hover .bbc-two-feature-title {
   text-decoration: underline;
-  color: #006699;
+  color: var(--bbc-red);
 }
 
 .bbc-two-feature-img-wrap {
@@ -2092,6 +2107,8 @@ button {
   background: #f3f4f6;
   padding: 4px 10px;
   border-radius: 14px;
+  border: none;
+  outline: none;
   cursor: pointer;
   transition: all 0.15s ease;
   user-select: none;
@@ -2099,8 +2116,14 @@ button {
 }
 
 .bbc-sport-pill:hover {
-  background: #ffd230;
-  color: #000;
+  background: #ffd230 !important;
+  color: #000 !important;
+}
+
+.bbc-sport-pill.active {
+  background: #ffd230 !important;
+  color: #000000 !important;
+  font-weight: 800 !important;
 }
 
 /* Sport Split Grid: Featured Hero Left + 3 Cards Right */
@@ -2150,7 +2173,7 @@ button {
 
 .bbc-sport-hero-card:hover .bbc-sport-hero-title {
   text-decoration: underline;
-  color: #006699;
+  color: var(--bbc-red);
 }
 
 .bbc-sport-live-badge {
@@ -2283,7 +2306,7 @@ button {
 
 .bbc-sport-side-card:hover .bbc-sport-side-title {
   text-decoration: underline;
-  color: #006699;
+  color: var(--bbc-red);
 }
 
 /* Bottom Sport Grid: 3 Clean Columns */
@@ -2310,7 +2333,7 @@ button {
 
 .bbc-sport-bottom-card:hover .bbc-sport-bottom-title {
   text-decoration: underline;
-  color: #006699;
+  color: var(--bbc-red);
 }
 
 .bbc-sport-bottom-img-wrap {
@@ -2424,7 +2447,7 @@ button {
 
 .bbc-culture-card:hover .bbc-culture-title {
   text-decoration: underline;
-  color: #006699;
+  color: var(--bbc-red);
 }
 
 /* Spotlight In-Depth Card */
@@ -2496,7 +2519,7 @@ button {
 
 .bbc-spotlight-banner:hover .bbc-spotlight-title {
   text-decoration: underline;
-  color: #006699;
+  color: var(--bbc-red);
 }
 
 .bbc-spotlight-snippet {
@@ -2563,7 +2586,7 @@ button {
 
 .bbc-three-card:hover .bbc-three-title {
   text-decoration: underline;
-  color: #006699;
+  color: var(--bbc-red);
 }
 
 .bbc-three-snippet {
@@ -2840,7 +2863,7 @@ button {
 
 .bbc-col-lead-card:hover .bbc-col-lead-title {
   text-decoration: underline;
-  color: #006699;
+  color: var(--bbc-red);
 }
 
 .bbc-col-lead-snippet {
@@ -2885,7 +2908,7 @@ button {
 
 .bbc-col-list li:hover h5 {
   text-decoration: underline;
-  color: #006699;
+  color: var(--bbc-red);
 }
 
 .bbc-col-list span {
@@ -2959,7 +2982,7 @@ button {
 
 .bbc-card-bottom:hover .bbc-card-bottom-title {
   text-decoration: underline;
-  color: #006699;
+  color: var(--bbc-red);
 }
 
 .bbc-card-bottom-snippet {
@@ -3409,3 +3432,37 @@ img,
     grid-template-columns: 1fr !important;
   }
 }
+
+/* ========================================================
+   UNIVERSAL NEWS HEADLINE HOVER EFFECT: BBC RED (#b80000)
+   ======================================================== */
+.bbc-card-right:hover .bbc-card-right-title,
+.bbc-card-right-title:hover,
+.bbc-card:hover .bbc-card-title,
+.bbc-card-title:hover,
+.bbc-two-feature-card:hover .bbc-two-feature-title,
+.bbc-two-feature-title:hover,
+.bbc-sport-hero-card:hover .bbc-sport-hero-title,
+.bbc-sport-hero-title:hover,
+.bbc-sport-side-card:hover .bbc-sport-side-title,
+.bbc-sport-side-title:hover,
+.bbc-sport-bottom-card:hover .bbc-sport-bottom-title,
+.bbc-sport-bottom-title:hover,
+.bbc-culture-card:hover .bbc-culture-title,
+.bbc-culture-title:hover,
+.bbc-spotlight-banner:hover .bbc-spotlight-title,
+.bbc-spotlight-title:hover,
+.bbc-three-card:hover .bbc-three-title,
+.bbc-three-title:hover,
+.bbc-col-lead-card:hover .bbc-col-lead-title,
+.bbc-col-lead-title:hover,
+.bbc-col-list li:hover h5,
+.bbc-card-bottom:hover .bbc-card-bottom-title,
+.bbc-card-bottom-title:hover,
+.bbc-article-card:hover .bbc-article-title,
+.bbc-article-title:hover,
+.bbc-hero-overlay-headline:hover span {
+  color: var(--bbc-red) !important;
+  text-decoration: underline !important;
+}
+

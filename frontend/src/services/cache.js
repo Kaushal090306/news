@@ -36,8 +36,7 @@ export const getCachedFeeds = () => {
     stories: [],
     heroStory: null,
     breakingStories: [],
-    categoryStories: {},
-    availableDates: []
+    categoryStories: {}
   };
 };
 
@@ -48,7 +47,6 @@ export const setCachedFeeds = (data) => {
     heroStory: data.heroStory || data.stories[0] || null,
     breakingStories: data.breakingStories || [],
     categoryStories: data.categoryStories || {},
-    availableDates: data.availableDates || [],
     timestamp: Date.now()
   });
 };

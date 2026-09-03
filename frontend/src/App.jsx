@@ -29,9 +29,6 @@ export function App() {
   const [activeCategory, setActiveCategory] = useState('all');
   const [selectedCountry, setSelectedCountry] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedDate, setSelectedDate] = useState('all');
-  const [availableDates, setAvailableDates] = useState(() => initialFeeds.availableDates || []);
-  
   const [stories, setStories] = useState(() => initialFeeds.stories || []);
   const [heroStory, setHeroStory] = useState(() => initialFeeds.heroStory || null);
   const [breakingStories, setBreakingStories] = useState(() => initialFeeds.breakingStories || []);
@@ -122,10 +119,10 @@ export function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // Fetch feeds whenever search, date, or country changes
+  // Fetch feeds whenever search or country changes
   useEffect(() => {
     loadFeedData(true);
-  }, [searchQuery, selectedDate, selectedCountry]);
+  }, [searchQuery, selectedCountry]);
 
   // When activeCategory changes, refresh silently in background (0ms instant UI update)
   useEffect(() => {
@@ -134,19 +131,17 @@ export function App() {
 
   const loadFeedData = async (isInitialOrMajorChange = false) => {
     try {
-      const dateParam = selectedDate !== 'all' ? selectedDate : undefined;
       const countryParam = selectedCountry !== 'all' ? selectedCountry : undefined;
 
       const [storiesRes, heroRes, breakingRes, catRes] = await Promise.all([
         api.getStories({
           country: countryParam,
           search: searchQuery || undefined,
-          date: dateParam,
           limit: 250
         }),
         api.getHeroStory(activeCategory !== 'all' ? activeCategory : undefined),
         api.getBreakingNews(),
-        api.getStoriesByCategory(dateParam, countryParam)
+        api.getStoriesByCategory(undefined, countryParam)
       ]);
 
       let newStories = stories;
@@ -272,9 +267,6 @@ export function App() {
         onLogout={handleLogout}
         onSearch={handleSearch}
         stories={stories}
-        selectedDate={selectedDate}
-        onSelectDate={(d) => setSelectedDate(d)}
-        availableDates={availableDates}
       />
 
       {/* Slide-out Left Drawer Menu (Screenshot 5) */}
