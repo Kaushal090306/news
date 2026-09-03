@@ -32,6 +32,7 @@ export function App() {
   const [heroStory, setHeroStory] = useState(() => initialFeeds.heroStory || null);
   const [breakingStories, setBreakingStories] = useState(() => initialFeeds.breakingStories || []);
   const [categoryStories, setCategoryStories] = useState(() => initialFeeds.categoryStories || {});
+  const [availableDates, setAvailableDates] = useState(() => initialFeeds.availableDates || []);
 
   const [selectedStory, setSelectedStory] = useState(() => initialCachedStory?.story || null);
   const [storyDetailData, setStoryDetailData] = useState(() => initialCachedStory || null);

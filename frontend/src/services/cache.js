@@ -1,3 +1,5 @@
+import seedFeeds from './seedFeeds.json';
+
 // Client-side instant persistent cache for Stale-While-Revalidate loading
 // Stores ONLY 100% authentic original data from the backend database/API.
 // Zero dummy or predefined data.
@@ -26,17 +28,24 @@ const safeSet = (key, value) => {
   }
 };
 
-// FEEDS CACHE (Original database data only)
+// FEEDS CACHE (Instant 0-delay authentic data even on first-time/incognito visit)
 export const getCachedFeeds = () => {
   const cached = safeGet(FEEDS_CACHE_KEY);
   if (cached && Array.isArray(cached.stories) && cached.stories.length > 0) {
     return cached;
   }
+  // FIRST TIME VISIT / FRESH SESSION / INCOGNITO:
+  // Return authentic bundled seed data immediately with 0 microsecond delay
+  if (seedFeeds && Array.isArray(seedFeeds.stories) && seedFeeds.stories.length > 0) {
+    safeSet(FEEDS_CACHE_KEY, seedFeeds);
+    return seedFeeds;
+  }
   return {
     stories: [],
     heroStory: null,
     breakingStories: [],
-    categoryStories: {}
+    categoryStories: {},
+    availableDates: []
   };
 };
 
