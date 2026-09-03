@@ -78,7 +78,10 @@ export const getCategoryFallbackImage = (category, index = 0) => {
     sport: [
       'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=1600&auto=format&fit=crop&q=90',
       'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=1600&auto=format&fit=crop&q=90',
-      'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=1600&auto=format&fit=crop&q=90'
+      'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=1600&auto=format&fit=crop&q=90',
+      'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=1600&auto=format&fit=crop&q=90',
+      'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=1600&auto=format&fit=crop&q=90',
+      'https://images.unsplash.com/photo-1587280501635-68a0e82cd5ff?w=1600&auto=format&fit=crop&q=90'
     ],
     culture: [
       'https://images.unsplash.com/photo-1499364615650-ec38552f4f34?w=1600&auto=format&fit=crop&q=90',
@@ -240,7 +243,7 @@ export const EditorialGrid = ({
 
   // Section allocations: STRICTLY ACCURATE TO SELECTED COUNTRY & CATEGORY
   const trendingTwoStories = getCatList('World', 2);
-  const sportStories = getCatList('Sport', 4);
+  const sportStories = getCatList('Sport', 7);
   const cultureStripStories = getCatList('Culture', 6);
   const politicsSpotlight = getCatList('World', 1)[0] || countryStories[0];
   const artsStories = getCatList('Culture', 3);
@@ -487,16 +490,31 @@ export const EditorialGrid = ({
       )}
 
       {/* ========================================================
-          3. SPORT SECTION (Big Sports Feature + 3 Side Sports Cards)
+          3. SPORT SECTION (Featured Hero + 3 Side Cards + Highlights Row)
           ======================================================== */}
       {sportStories.length > 0 && (
-        <section className="bbc-section-block">
-          <div className="bbc-section-header">
-            <span className="bbc-section-tag-red" />
-            <h3 className="bbc-section-title">
-              SPORT <ChevronRight size={18} className="bbc-section-chevron" />
-            </h3>
+        <section className="bbc-section-block bbc-sport-section">
+          {/* Authentic BBC Sport Header with Category Navigation */}
+          <div className="bbc-sport-section-header">
+            <div className="bbc-sport-header-left" onClick={() => onSelectCategory('Sport')} style={{ cursor: 'pointer' }}>
+              <span className="bbc-sport-header-bar" />
+              <h3 className="bbc-sport-section-title">
+                SPORT <ChevronRight size={18} className="bbc-sport-chevron" />
+              </h3>
+            </div>
+            <div className="bbc-sport-pills-nav">
+              {['Football', 'Cricket', 'Formula 1', 'Tennis', 'Golf', 'Athletics'].map((sub) => (
+                <span
+                  key={sub}
+                  className="bbc-sport-pill"
+                  onClick={() => onSelectCategory('Sport')}
+                >
+                  {sub}
+                </span>
+              ))}
+            </div>
           </div>
+
           <div className="bbc-sport-split-grid">
             {/* Main Featured Sport Card */}
             {sportStories[0] && (
@@ -540,15 +558,58 @@ export const EditorialGrid = ({
                     className="bbc-sport-side-card"
                     onClick={() => onSelectStory(story)}
                   >
-                    <WireframeImage
-                      src={img}
-                      alt={story.canonical_title}
-                      className="bbc-sport-side-img"
-                      fallbackSrc={getCategoryFallbackImage('sport', i + 1)}
-                      loading="lazy"
-                    />
+                    <div className="bbc-sport-side-img-wrap">
+                      <WireframeImage
+                        src={img}
+                        alt={story.canonical_title}
+                        className="bbc-sport-side-img"
+                        fallbackSrc={getCategoryFallbackImage('sport', i + 1)}
+                        loading="lazy"
+                      />
+                    </div>
                     <div className="bbc-sport-side-body">
+                      <span className="bbc-kicker-red" style={{ fontSize: 10, marginBottom: 2 }}>SPORT</span>
                       <h4 className="bbc-sport-side-title">{story.canonical_title}</h4>
+                      <div className="bbc-card-meta">
+                        <span>{formatTimeAgo(story.last_updated_at)}</span>
+                        <span>•</span>
+                        <span>Sport</span>
+                        {story.sources_count > 1 && (
+                          <span style={{ color: '#006699', fontWeight: 600 }}>
+                            • {story.sources_count} sources
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Bottom 3 Sport Cards (if more than 4 sport stories available) */}
+          {sportStories.length > 4 && (
+            <div className="bbc-sport-bottom-grid">
+              {sportStories.slice(4, 7).map((story, i) => {
+                const img = getHdImageUrl(story.hero_image) || getCategoryFallbackImage('sport', i + 4);
+                return (
+                  <article
+                    key={story.id}
+                    className="bbc-sport-bottom-card"
+                    onClick={() => onSelectStory(story)}
+                  >
+                    <div className="bbc-sport-bottom-img-wrap">
+                      <WireframeImage
+                        src={img}
+                        alt={story.canonical_title}
+                        className="bbc-sport-bottom-img"
+                        fallbackSrc={getCategoryFallbackImage('sport', i + 4)}
+                        loading="lazy"
+                      />
+                    </div>
+                    <div className="bbc-sport-bottom-body">
+                      <span className="bbc-kicker-red" style={{ fontSize: 10 }}>SPORT</span>
+                      <h4 className="bbc-sport-bottom-title">{story.canonical_title}</h4>
                       <div className="bbc-card-meta">
                         <span>{formatTimeAgo(story.last_updated_at)}</span>
                         <span>•</span>
@@ -559,7 +620,7 @@ export const EditorialGrid = ({
                 );
               })}
             </div>
-          </div>
+          )}
         </section>
       )}
 
