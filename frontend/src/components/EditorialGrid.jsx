@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { WireframeImage } from './WireframeImage';
 
-const DEFAULT_NEWS_IMAGE = "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=1600&auto=format&fit=crop&q=90";
+const DEFAULT_NEWS_IMAGE = "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=1600&auto=format&fit=crop&q=90";
 
 export const getHdImageUrl = (url) => {
   if (!url) return '';
@@ -62,18 +62,43 @@ export const getHdImageUrl = (url) => {
   return hdUrl;
 };
 
-export const getCategoryFallbackImage = (category, index = 0) => {
+export const getCategoryFallbackImage = (category, index = 0, seed = '') => {
   const cat = (category || '').toLowerCase();
+
+  // Deterministic seed hash so adjacent stories NEVER share the same fallback photo
+  let offset = index;
+  if (seed) {
+    let hash = 0;
+    const str = String(seed);
+    for (let i = 0; i < str.length; i++) {
+      hash = ((hash << 5) - hash) + str.charCodeAt(i);
+      hash |= 0;
+    }
+    offset = Math.abs(hash);
+  }
+
   const fallbacks = {
+    world: [
+      'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=1600&auto=format&fit=crop&q=90', // Global summit / diplomacy
+      'https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=1600&auto=format&fit=crop&q=90', // Press conference & microphones
+      'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=1600&auto=format&fit=crop&q=90', // Law & justice / courtroom
+      'https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?w=1600&auto=format&fit=crop&q=90', // International flags / summit
+      'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=1600&auto=format&fit=crop&q=90', // Journalistic reporting
+      'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1600&auto=format&fit=crop&q=90', // Globe / satellite earth
+      'https://images.unsplash.com/photo-1477959858617-67f30bc75b82?w=1600&auto=format&fit=crop&q=90', // Cityscape / capital skyline
+      'https://images.unsplash.com/photo-1543783207-ec64e4d95325?w=1600&auto=format&fit=crop&q=90'  // Public safety / emergency
+    ],
     technology: [
       'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1600&auto=format&fit=crop&q=90',
       'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1600&auto=format&fit=crop&q=90',
-      'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=1600&auto=format&fit=crop&q=90'
+      'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=1600&auto=format&fit=crop&q=90',
+      'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=1600&auto=format&fit=crop&q=90'
     ],
     business: [
       'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1600&auto=format&fit=crop&q=90',
       'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1600&auto=format&fit=crop&q=90',
-      'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=1600&auto=format&fit=crop&q=90'
+      'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=1600&auto=format&fit=crop&q=90',
+      'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1600&auto=format&fit=crop&q=90'
     ],
     sport: [
       'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=1600&auto=format&fit=crop&q=90',
@@ -86,29 +111,34 @@ export const getCategoryFallbackImage = (category, index = 0) => {
     culture: [
       'https://images.unsplash.com/photo-1499364615650-ec38552f4f34?w=1600&auto=format&fit=crop&q=90',
       'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=1600&auto=format&fit=crop&q=90',
-      'https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=1600&auto=format&fit=crop&q=90'
+      'https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=1600&auto=format&fit=crop&q=90',
+      'https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=1600&auto=format&fit=crop&q=90'
     ],
     science: [
       'https://images.unsplash.com/photo-1507668077129-56e32842fceb?w=1600&auto=format&fit=crop&q=90',
       'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1600&auto=format&fit=crop&q=90',
-      'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=1600&auto=format&fit=crop&q=90'
+      'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=1600&auto=format&fit=crop&q=90',
+      'https://images.unsplash.com/photo-1507413245164-6160d8298b31?w=1600&auto=format&fit=crop&q=90'
     ],
     health: [
       'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=1600&auto=format&fit=crop&q=90',
-      'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=1600&auto=format&fit=crop&q=90'
+      'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=1600&auto=format&fit=crop&q=90',
+      'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=1600&auto=format&fit=crop&q=90'
     ],
     india: [
       'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=1600&auto=format&fit=crop&q=90',
-      'https://images.unsplash.com/photo-1532375810709-75b1da00537c?w=1600&auto=format&fit=crop&q=90'
+      'https://images.unsplash.com/photo-1532375810709-75b1da00537c?w=1600&auto=format&fit=crop&q=90',
+      'https://images.unsplash.com/photo-1564507592333-c60657eea523?w=1600&auto=format&fit=crop&q=90'
     ],
     travel: [
       'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1600&auto=format&fit=crop&q=90',
-      'https://images.unsplash.com/photo-1503220317375-aaad61436b1b?w=1600&auto=format&fit=crop&q=90'
+      'https://images.unsplash.com/photo-1503220317375-aaad61436b1b?w=1600&auto=format&fit=crop&q=90',
+      'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=1600&auto=format&fit=crop&q=90'
     ]
   };
 
-  const list = fallbacks[cat] || [DEFAULT_NEWS_IMAGE];
-  return list[index % list.length] || DEFAULT_NEWS_IMAGE;
+  const list = fallbacks[cat] || fallbacks.world;
+  return list[offset % list.length] || DEFAULT_NEWS_IMAGE;
 };
 
 // Format clean full date & time (e.g. "2 SEPT 2026, 03:07 PM")
@@ -306,7 +336,7 @@ export const EditorialGrid = ({
               style={{ transform: `translateX(-${currentSlideIndex * 100}%)` }}
             >
               {heroSliderStories.map((story, index) => {
-                const fallbackImg = getCategoryFallbackImage(story.category, index);
+                const fallbackImg = getCategoryFallbackImage(story.category, index, story.id);
                 const hdImg = getHdImageUrl(story.hero_image) || fallbackImg;
                 return (
                   <div key={`slide-${story.id}-${index}`} className="bbc-hero-slide-item">
@@ -449,7 +479,7 @@ export const EditorialGrid = ({
           </div>
           <div className="bbc-two-feature-grid">
             {trendingTwoStories.map((story, i) => {
-              const fallback = getCategoryFallbackImage(story.category, i);
+              const fallback = getCategoryFallbackImage(story.category, i, story.id);
               const imgUrl = getHdImageUrl(story.hero_image) || fallback;
               return (
                 <article
@@ -1050,7 +1080,7 @@ export const EditorialGrid = ({
           </div>
           <div className="bbc-four-grid">
             {remainingStories.map((story, i) => {
-              const fallback = getCategoryFallbackImage(story.category, i);
+              const fallback = getCategoryFallbackImage(story.category, i, story.id);
               const imgUrl = getHdImageUrl(story.hero_image) || fallback;
               return (
                 <article
