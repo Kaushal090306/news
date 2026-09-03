@@ -272,28 +272,22 @@ export const ArticleDetail = ({
 
   return (
     <div className="bbc-article-page">
-      {/* Top Back Navigation & Breadcrumb */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+      {/* Top Back Navigation & Red Category Row */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, borderBottom: '1px solid #e5e7eb', paddingBottom: 12 }}>
         <button 
           onClick={onBack}
           style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700, color: '#121212', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
         >
           <ArrowLeft size={16} /> Back to News Feed
         </button>
-        <span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>
-          {story.category} / Special Report
+        <span style={{ fontSize: 13, color: 'var(--bbc-red)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+          {story.category}
         </span>
       </div>
 
       <div className="bbc-article-container">
         {/* Main Article Column */}
         <main className="bbc-article-main">
-          {/* Category Tag */}
-          <div style={{ marginBottom: 6 }}>
-            <span style={{ color: '#121212', fontSize: 11, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.8px' }}>
-              {story.category} REPORT
-            </span>
-          </div>
 
           {/* Refined Headline */}
           <h1 className="bbc-article-headline">

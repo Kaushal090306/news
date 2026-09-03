@@ -282,13 +282,14 @@ export const EditorialGrid = ({
   }
 
   // 3. Strict Category Helper with GUARANTEED UNIQUE STORY ALLOCATION
+  // 3. Strict Category Helper with GUARANTEED TOPIC INTEGRITY
   const getCatList = (catName, count = 4) => {
     const key = catName.toLowerCase();
     const picked = [];
 
-    // Step A: Pick from partitioned categoryStories that haven't been displayed yet
+    // Step A: Pick from partitioned categoryStories that match THIS EXACT category
     const fromCat = (categoryStories[key] || []).filter(
-      (s) => !usedStoryIds.has(s.id) && (!isCountryFiltered || s.country?.toLowerCase() === selectedCountry.toLowerCase())
+      (s) => (s.category || '').toLowerCase() === key && !usedStoryIds.has(s.id) && (!isCountryFiltered || s.country?.toLowerCase() === selectedCountry.toLowerCase())
     );
     for (const s of fromCat) {
       if (picked.length >= count) break;
@@ -296,10 +297,10 @@ export const EditorialGrid = ({
       usedStoryIds.add(s.id);
     }
 
-    // Step B: If more needed, pick from countryStories matching this category
+    // Step B: If more needed, pick from countryStories matching THIS EXACT category
     if (picked.length < count) {
       const matchingCat = countryStories.filter(
-        (s) => s.category?.toLowerCase() === key && !usedStoryIds.has(s.id)
+        (s) => (s.category || '').toLowerCase() === key && !usedStoryIds.has(s.id)
       );
       for (const s of matchingCat) {
         if (picked.length >= count) break;
@@ -308,16 +309,19 @@ export const EditorialGrid = ({
       }
     }
 
-    // Step C: If still needed, fill with remaining unused stories from active country/feed (Zero duplication!)
+    // Step C: If still needed, pick from global stories matching THIS EXACT category
     if (picked.length < count) {
-      const remainingUnused = countryStories.filter((s) => !usedStoryIds.has(s.id));
-      for (const s of remainingUnused) {
+      const globalMatchingCat = stories.filter(
+        (s) => (s.category || '').toLowerCase() === key && !usedStoryIds.has(s.id)
+      );
+      for (const s of globalMatchingCat) {
         if (picked.length >= count) break;
         picked.push(s);
         usedStoryIds.add(s.id);
       }
     }
 
+    // STRICT INTEGRITY: NEVER backfill with unrelated categories!
     return picked;
   };
 
@@ -332,37 +336,39 @@ export const EditorialGrid = ({
   const historyStory = getCatList('World', 1)[0] || countryStories[1] || countryStories[0];
   const travelStories = getCatList('Culture', 2);
 
-  // Sport sub-type matcher (e.g. Cricket, Football, Formula 1, Tennis, Golf, Athletics)
-  const matchesSportSub = (story, sub) => {
-    if (!story) return false;
-    if (sub === 'All' || sub === 'All Sport') return true;
-    const txt = `${story.canonical_title || ''} ${story.summary || ''} ${story.slug || ''} ${JSON.stringify(story.tags || [])}`.toLowerCase();
-    switch (sub) {
-      case 'Football':
-        return /football|soccer|premier league|champions league|la liga|serie a|fifa|messi|ronaldo|manchester|arsenal|chelsea|liverpool|bayern|real madrid|barcelona|psg|tottenham|epl|haaland|mbappe|striker|goalkeeper|uefa|nfl|quarterback|touchdown/.test(txt);
-      case 'Cricket':
-        return /cricket|ipl|bcci|icc|test match|odi|t20|wicket|batsman|bowler|innings|rohit|virat|kohli|bumrah|dhoni|ashwin|babar|pakistan cricket|england cricket|australia cricket|ashes|test - england/.test(txt);
-      case 'Formula 1':
-        return /formula 1|formula one|f1|grand prix|verstappen|hamilton|ferrari|mercedes|red bull|mclaren|leclerc|norris|russell|fia|racing/.test(txt);
-      case 'Tennis':
-        return /tennis|us open|wimbledon|australian open|french open|roland garros|djokovic|alcaraz|sinner|nadal|federer|swiatek|sabalenka|gauff|atp|wta|grand slam|boulter/.test(txt);
-      case 'Golf':
-        return /golf|pga|liv golf|ryder cup|masters|tiger woods|mcilroy|scheffler|open championship/.test(txt);
-      case 'Athletics':
-        return /athletics|olympics|olympic|marathon|runner|sprint|100m|200m|track and field|relay|hurdles|pole vault|long jump|salis|pudge|mlb|baseball/.test(txt);
-      default:
-        return txt.includes(sub.toLowerCase());
-    }
+  // ALL SPORT CANDIDATES: Must strictly have category === 'Sport'
+  const authenticSportStories = stories.filter(
+    (s) => (s.category || '').toLowerCase() === 'sport'
+  );
+
+  // Robust word-boundary regex patterns strictly for sports
+  const sportRegexPatterns = {
+    Cricket: /cricket|ipl|bcci|\bicc\b|test match|\bodi\b|\bt20\b|wicket|batsman|bowler|innings|rohit|virat|kohli|bumrah|dhoni|\bcsk\b|gambhir|kuggeleijn|hampshire/i,
+    Football: /football|soccer|premier league|champions league|la liga|serie a|fifa|messi|ronaldo|manchester|arsenal|chelsea|liverpool|bayern|real madrid|barcelona|psg|tottenham|epl|haaland|mbappe|striker|goalkeeper|uefa|\bnfl\b|quarterback|touchdown|brighton|newcastle|everton|azeez|fernandez|tielemans|clippers|\bnba\b/i,
+    Tennis: /tennis|us open|wimbledon|australian open|french open|roland garros|djokovic|alcaraz|sinner|nadal|federer|swiatek|sabalenka|gauff|\batp\b|\bwta\b|grand slam|boulter|lucky loser/i,
+    'Formula 1': /formula 1|formula one|\bf1\b|grand prix|verstappen|hamilton|ferrari|mercedes|red bull|mclaren|leclerc|norris|russell|\bfia\b|motorsport|\bgp\b/i,
+    Golf: /golf|\bpga\b|liv golf|ryder cup|masters|tiger woods|mcilroy|scheffler|open championship/i,
+    Athletics: /athletics|olympic|marathon|runner|sprint|100m|200m|track and field|relay|hurdles|pole vault|long jump|salas|pudge|\bmlb\b|baseball/i
   };
 
-  // Specific sport filtered pool
-  const specificSportMatches = selectedSportSub === 'All'
-    ? []
-    : stories.filter((s) => matchesSportSub(s, selectedSportSub));
+  const matchesSportSub = (story, sub) => {
+    if (!story || (story.category || '').toLowerCase() !== 'sport') return false;
+    if (sub === 'All' || sub === 'All Sport') return true;
+    const pat = sportRegexPatterns[sub];
+    if (!pat) return false;
+    const textToSearch = `${story.canonical_title || ''} ${story.summary || ''} ${story.slug || ''}`;
+    return pat.test(textToSearch);
+  };
 
-  const displayedSportStories = selectedSportSub === 'All'
-    ? sportStories
-    : (specificSportMatches.length > 0 ? specificSportMatches : sportStories);
+  // Specific sport filtered pool (STRICTLY within authentic sport stories)
+  const specificSportMatches = selectedSportSub === 'All'
+    ? authenticSportStories
+    : authenticSportStories.filter((s) => matchesSportSub(s, selectedSportSub));
+
+  // If specific matches exist, show them; otherwise fallback to authenticSportStories (NEVER non-sport!)
+  const displayedSportStories = (specificSportMatches.length > 0
+    ? specificSportMatches
+    : authenticSportStories).slice(0, 7);
 
   // 4-Column Grid: Business | Technology | Science | Health
   // ZERO DUPLICATES: Every single column receives completely distinct, unique stories!
