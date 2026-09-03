@@ -105,7 +105,7 @@ def get_stories_by_category(date: Optional[str] = None, country: Optional[str] =
         query += """
             )
             SELECT * FROM ranked_stories
-            WHERE rn <= 12
+            WHERE rn <= 25
             ORDER BY category, last_updated_at DESC
         """
         
@@ -130,43 +130,21 @@ def get_stories_by_category(date: Optional[str] = None, country: Optional[str] =
             else:
                 categories_map.setdefault(cat_key, []).append(serialize_story(dict(r)))
 
-        # Fallback to previous latest news:
-        # If country is selected, ensure every slot is filled with previous stories FROM THAT COUNTRY ONLY
-        if country and country.lower() != 'all':
-            cursor.execute("""
-                SELECT s.*
-                FROM stories s
-                WHERE s.status = 'published' AND LOWER(s.country) = LOWER(%s)
-                ORDER BY s.last_updated_at DESC, s.importance_score DESC
-                LIMIT 60
-            """, (country,))
-            all_country_stories = [serialize_story(dict(row)) for row in cursor.fetchall()]
-            
-            # Distribute country stories to any category that is empty or has few stories
-            offset = 0
-            for cat_key in ["business", "technology", "science", "health", "sport", "culture", "world", "india"]:
-                if len(categories_map[cat_key]) < 4 and all_country_stories:
-                    existing_ids = {s['id'] for s in categories_map[cat_key]}
-                    candidates = [s for s in all_country_stories if s['id'] not in existing_ids]
-                    for s in candidates[offset:offset+4]:
-                        categories_map[cat_key].append(s)
-                    offset = (offset + 4) % max(len(all_country_stories), 1)
-        else:
-            # Global edition: If a category is empty, fetch previous latest news of that category
-            for cat_key in list(categories_map.keys()):
-                if len(categories_map[cat_key]) < 4:
-                    cursor.execute("""
-                        SELECT s.*
-                        FROM stories s
-                        WHERE s.status = 'published' AND LOWER(s.category) = %s
-                        ORDER BY s.last_updated_at DESC, s.importance_score DESC
-                        LIMIT 8
-                    """, (cat_key,))
-                    existing_ids = {s['id'] for s in categories_map[cat_key]}
-                    for fb in cursor.fetchall():
-                        if fb['id'] not in existing_ids:
-                            categories_map[cat_key].append(serialize_story(dict(fb)))
-                            existing_ids.add(fb['id'])
+        # Fallback ensuring STRICT topic integrity (never mix categories)
+        for cat_key in list(categories_map.keys()):
+            if len(categories_map[cat_key]) < 8:
+                cursor.execute("""
+                    SELECT s.*
+                    FROM stories s
+                    WHERE s.status = 'published' AND LOWER(s.category) = %s
+                    ORDER BY s.last_updated_at DESC, s.importance_score DESC
+                    LIMIT 20
+                """, (cat_key,))
+                existing_ids = {s['id'] for s in categories_map[cat_key]}
+                for fb in cursor.fetchall():
+                    if fb['id'] not in existing_ids:
+                        categories_map[cat_key].append(serialize_story(dict(fb)))
+                        existing_ids.add(fb['id'])
                 
         return {"categories": categories_map}
 

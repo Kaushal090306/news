@@ -337,18 +337,30 @@ export const EditorialGrid = ({
   const travelStories = getCatList('Culture', 2);
 
   // ALL SPORT CANDIDATES: Must strictly have category === 'Sport'
-  const authenticSportStories = stories.filter(
-    (s) => (s.category || '').toLowerCase() === 'sport'
+  // Combine all authentic sport stories from categoryStories['sport'], sportStories, and stories!
+  const combinedSportList = [
+    ...(categoryStories['sport'] || []),
+    ...(categoryStories['Sport'] || []),
+    ...sportStories,
+    ...stories.filter((s) => (s.category || '').toLowerCase() === 'sport')
+  ];
+
+  const authenticSportStories = Array.from(
+    new Map(
+      combinedSportList
+        .filter((s) => (s.category || '').toLowerCase() === 'sport')
+        .map((s) => [s.id, s])
+    ).values()
   );
 
   // Robust word-boundary regex patterns strictly for sports
   const sportRegexPatterns = {
-    Cricket: /cricket|ipl|bcci|\bicc\b|test match|\bodi\b|\bt20\b|wicket|batsman|bowler|innings|rohit|virat|kohli|bumrah|dhoni|\bcsk\b|gambhir|kuggeleijn|hampshire/i,
+    Cricket: /cricket|ipl|bcci|\bicc\b|test match|\bodi\b|\bt20\b|wicket|batsman|bowler|innings|rohit|virat|kohli|bumrah|dhoni|\bcsk\b|gambhir|kuggeleijn|hampshire|babar/i,
     Football: /football|soccer|premier league|champions league|la liga|serie a|fifa|messi|ronaldo|manchester|arsenal|chelsea|liverpool|bayern|real madrid|barcelona|psg|tottenham|epl|haaland|mbappe|striker|goalkeeper|uefa|\bnfl\b|quarterback|touchdown|brighton|newcastle|everton|azeez|fernandez|tielemans|clippers|\bnba\b/i,
     Tennis: /tennis|us open|wimbledon|australian open|french open|roland garros|djokovic|alcaraz|sinner|nadal|federer|swiatek|sabalenka|gauff|\batp\b|\bwta\b|grand slam|boulter|lucky loser/i,
     'Formula 1': /formula 1|formula one|\bf1\b|grand prix|verstappen|hamilton|ferrari|mercedes|red bull|mclaren|leclerc|norris|russell|\bfia\b|motorsport|\bgp\b/i,
     Golf: /golf|\bpga\b|liv golf|ryder cup|masters|tiger woods|mcilroy|scheffler|open championship/i,
-    Athletics: /athletics|olympic|marathon|runner|sprint|100m|200m|track and field|relay|hurdles|pole vault|long jump|salas|pudge|\bmlb\b|baseball/i
+    Athletics: /athletics|olympic|marathon|runner|sprint|100m|200m|track and field|relay|hurdles|pole vault|long jump|salas|pudge|\bmlb\b|baseball|badminton/i
   };
 
   const matchesSportSub = (story, sub) => {
@@ -612,7 +624,7 @@ export const EditorialGrid = ({
       {/* ========================================================
           3. SPORT SECTION (Featured Hero + 3 Side Cards + Highlights Row)
           ======================================================== */}
-      {displayedSportStories.length > 0 && (
+      {(!isCategoryFiltered || activeCategory.toLowerCase() === 'sport' || displayedSportStories.length > 0) && (
         <section className="bbc-section-block bbc-sport-section">
           {/* Authentic BBC Sport Header with In-Place Category Filtering */}
           <div className="bbc-sport-section-header">
