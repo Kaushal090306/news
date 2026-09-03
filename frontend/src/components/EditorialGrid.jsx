@@ -290,7 +290,7 @@ export const EditorialGrid = ({
           ======================================================== */}
       <section className="bbc-hero-layout">
         {/* Left: Big Hero Poster with Horizontal Sliding Track */}
-        {heroSliderStories.length > 0 && (
+        {heroSliderStories.length > 0 ? (
           <div
             className="bbc-hero-poster-container"
             onMouseEnter={() => setIsHovered(true)}
@@ -374,6 +374,14 @@ export const EditorialGrid = ({
               </div>
             )}
           </div>
+        ) : (
+          <div className="bbc-hero-poster-container" style={{ background: '#e5e7eb', height: 440, borderRadius: 4, position: 'relative' }}>
+            <div style={{ position: 'absolute', bottom: 24, left: 24, right: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ width: 80, height: 16, background: '#cbd5e1', borderRadius: 2 }} />
+              <div style={{ width: '75%', height: 32, background: '#cbd5e1', borderRadius: 4 }} />
+              <div style={{ width: '60%', height: 18, background: '#cbd5e1', borderRadius: 3 }} />
+            </div>
+          </div>
         )}
 
         {/* Right Column: Scrollable Top Developments Inside Container */}
@@ -383,24 +391,33 @@ export const EditorialGrid = ({
           </div>
 
           <div className="bbc-right-scroll-content">
-            {rightColumnStories.map((story) => (
-              <article
-                key={story.id}
-                className="bbc-card-right"
-                onClick={() => onSelectStory(story)}
-              >
-                <h4 className="bbc-card-right-title">{story.canonical_title}</h4>
-                <p className="bbc-card-right-snippet">{story.summary}</p>
-                <div className="bbc-card-meta">
-                  <span>{formatTimeAgo(story.last_updated_at)}</span>
-                  <span>|</span>
-                  <span>{story.category}</span>
-                  {story.sources_count > 1 && (
-                    <span style={{ color: '#006699', fontWeight: 600 }}>• {story.sources_count} sources</span>
-                  )}
+            {rightColumnStories.length > 0 ? (
+              rightColumnStories.map((story) => (
+                <article
+                  key={story.id}
+                  className="bbc-card-right"
+                  onClick={() => onSelectStory(story)}
+                >
+                  <h4 className="bbc-card-right-title">{story.canonical_title}</h4>
+                  <p className="bbc-card-right-snippet">{story.summary}</p>
+                  <div className="bbc-card-meta">
+                    <span>{formatTimeAgo(story.last_updated_at)}</span>
+                    <span>|</span>
+                    <span>{story.category}</span>
+                    {story.sources_count > 1 && (
+                      <span style={{ color: '#006699', fontWeight: 600 }}>• {story.sources_count} sources</span>
+                    )}
+                  </div>
+                </article>
+              ))
+            ) : (
+              [1, 2, 3, 4].map((n) => (
+                <div key={n} style={{ padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
+                  <div style={{ width: '90%', height: 16, background: '#e5e7eb', borderRadius: 2, marginBottom: 6 }} />
+                  <div style={{ width: '70%', height: 12, background: '#f1f5f9', borderRadius: 2 }} />
                 </div>
-              </article>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </section>
