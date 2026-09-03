@@ -4,13 +4,15 @@ import {
   CheckCircle2, AlertTriangle, XCircle, Globe, Play, ExternalLink, X, Search
 } from 'lucide-react';
 import { api } from '../services/api';
+import { getCachedAdminData, setCachedAdminData } from '../services/cache';
 
 export const AdminPanel = ({ onBack }) => {
-  const [stats, setStats] = useState(null);
-  const [sources, setSources] = useState([]);
-  const [clusters, setClusters] = useState([]);
-  const [logs, setLogs] = useState([]);
-  const [users, setUsers] = useState([]);
+  const cachedAdmin = getCachedAdminData();
+  const [stats, setStats] = useState(() => cachedAdmin.stats || null);
+  const [sources, setSources] = useState(() => cachedAdmin.sources || []);
+  const [clusters, setClusters] = useState(() => cachedAdmin.clusters || []);
+  const [logs, setLogs] = useState(() => cachedAdmin.logs || []);
+  const [users, setUsers] = useState(() => cachedAdmin.users || []);
   const [activeTab, setActiveTab] = useState('sources'); // 'sources', 'users', 'clusters', 'logs'
   const [fetching, setFetching] = useState(false);
   const [fetchMessage, setFetchMessage] = useState('');
@@ -46,21 +48,43 @@ export const AdminPanel = ({ onBack }) => {
         api.getAdminUsers()
       ]);
 
+      let updatedStats = stats;
+      let updatedSources = sources;
+      let updatedClusters = clusters;
+      let updatedLogs = logs;
+      let updatedUsers = users;
+
       if (statsRes.status === 'fulfilled' && statsRes.value) {
-        setStats(statsRes.value);
+        updatedStats = statsRes.value;
+        setStats(updatedStats);
       }
       if (sourcesRes.status === 'fulfilled' && sourcesRes.value) {
-        setSources(sourcesRes.value.sources || []);
+        updatedSources = sourcesRes.value.sources || [];
+        setSources(updatedSources);
       }
       if (clustersRes.status === 'fulfilled' && clustersRes.value) {
-        setClusters(clustersRes.value.clusters || []);
+        updatedClusters = clustersRes.value.clusters || [];
+        setClusters(updatedClusters);
       }
       if (logsRes.status === 'fulfilled' && logsRes.value) {
-        setLogs(logsRes.value.logs || []);
+        updatedLogs = logsRes.value.logs || [];
+        setLogs(updatedLogs);
       }
-      if (usersRes.status === 'fulfilled' && usersRes.value) {
-        setUsers(usersRes.value.users || []);
+      if (usersRes.status === 'fulfilled' && usersRes.value && Array.isArray(usersRes.value.users) && usersRes.value.users.length > 0) {
+        updatedUsers = usersRes.value.users;
+        setUsers(updatedUsers);
+      } else if (users.length === 0 && cachedAdmin.users?.length > 0) {
+        updatedUsers = cachedAdmin.users;
+        setUsers(updatedUsers);
       }
+
+      setCachedAdminData({
+        stats: updatedStats,
+        sources: updatedSources,
+        clusters: updatedClusters,
+        logs: updatedLogs,
+        users: updatedUsers
+      });
     } catch (e) {
       console.error('Error loading admin data:', e);
     }
@@ -225,7 +249,7 @@ export const AdminPanel = ({ onBack }) => {
             disabled={fetching}
             style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#b80000', color: '#fff' }}
           >
-            <RefreshCw size={16} className={fetching ? 'animate-spin' : ''} />
+            <RefreshCw size={16} />
             <span>{fetching ? 'Ingesting...' : 'Trigger Ingestion'}</span>
           </button>
         </div>
@@ -487,7 +511,14 @@ export const AdminPanel = ({ onBack }) => {
                 </tr>
               </thead>
               <tbody>
-                {filteredUsers.map((u) => (
+                {filteredUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" style={{ padding: '32px 16px', textAlign: 'center', color: '#64748b' }}>
+                      No users found.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredUsers.map((u) => (
                   <tr key={u.id} style={{ borderBottom: '1px solid #eee' }}>
                     <td style={{ padding: '12px 16px' }}>
                       <div style={{ fontWeight: 700, color: '#121212' }}>{u.full_name || 'Anonymous User'}</div>
@@ -542,7 +573,7 @@ export const AdminPanel = ({ onBack }) => {
                       </button>
                     </td>
                   </tr>
-                ))}
+                )))}
               </tbody>
             </table>
           </div>

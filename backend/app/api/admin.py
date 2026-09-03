@@ -6,7 +6,6 @@ from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel
 from app.database import get_db_connection, hash_pwd
 from app.ingestion.fetcher import IngestionPipeline
-from app.ingestion.parsers import RSSParser, HTMLScraper
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 

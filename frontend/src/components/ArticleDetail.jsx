@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 import { getHdImageUrl, getCategoryFallbackImage } from './EditorialGrid';
+import { WireframeImage } from './WireframeImage';
 
 export const ArticleDetail = ({
   storyData,
@@ -34,9 +35,23 @@ export const ArticleDetail = ({
 
   if (!storyData || !storyData.story) {
     return (
-      <div className="bbc-main-content" style={{ textAlign: 'center', padding: '80px 20px' }}>
-        <div style={{ display: 'inline-block', width: 40, height: 40, border: '3px solid #e2e8f0', borderTopColor: '#121212', borderRadius: '50%', animation: 'spin 0.8s linear infinite', marginBottom: 16 }} />
-        <h2 style={{ fontSize: 20, fontWeight: 800 }}>Loading full journalistic report...</h2>
+      <div className="bbc-main-content bbc-article-view">
+        <button 
+          onClick={onBack} 
+          className="bbc-article-back-btn" 
+          style={{ marginBottom: 16, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+        >
+          <ArrowLeft size={16} /> Back to Headlines
+        </button>
+        <div style={{ maxWidth: 840, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ width: 100, height: 18, background: '#e5e7eb', borderRadius: 2 }} />
+          <div style={{ width: '90%', height: 42, background: '#e5e7eb', borderRadius: 4 }} />
+          <div style={{ width: '70%', height: 24, background: '#e5e7eb', borderRadius: 3 }} />
+          <div style={{ width: '100%', height: 420, background: '#e5e7eb', borderRadius: 4 }} />
+          <div style={{ width: '100%', height: 16, background: '#e5e7eb', borderRadius: 2 }} />
+          <div style={{ width: '95%', height: 16, background: '#e5e7eb', borderRadius: 2 }} />
+          <div style={{ width: '85%', height: 16, background: '#e5e7eb', borderRadius: 2 }} />
+        </div>
       </div>
     );
   }
@@ -336,14 +351,13 @@ export const ArticleDetail = ({
 
           {/* Hero Image & Caption */}
           <div className="bbc-article-hero-wrap">
-            <img
+            <WireframeImage
               src={heroImg}
               alt={story.canonical_title}
               className="bbc-article-hero-img"
               loading="eager"
               fetchPriority="high"
-              decoding="async"
-              onError={(e) => { e.target.src = fallbackImg; }}
+              fallbackSrc={fallbackImg}
             />
             <div className="bbc-article-img-caption">
               Associated coverage: Comprehensive reporting on {story.canonical_title}. Photo attribution to verified news correspondents.

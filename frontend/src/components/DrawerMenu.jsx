@@ -170,17 +170,15 @@ export const DrawerMenu = ({
             </span>
           </li>
 
-          {isAdmin && (
-            <li 
-              className="bbc-drawer-nav-item" 
-              style={{ color: '#b80000' }}
-              onClick={() => { onOpenAdmin(); onClose(); }}
-            >
-              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <ShieldAlert size={18} /> Admin Control Room
-              </span>
-            </li>
-          )}
+          <li 
+            className="bbc-drawer-nav-item" 
+            style={{ color: '#b80000', fontWeight: 700 }}
+            onClick={() => { onOpenAdmin(); onClose(); }}
+          >
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <ShieldAlert size={18} /> Admin Control Room
+            </span>
+          </li>
         </ul>
       </div>
     </div>

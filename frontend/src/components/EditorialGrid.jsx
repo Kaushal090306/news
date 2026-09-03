@@ -15,6 +15,7 @@ import {
   Sparkles,
   Flame
 } from 'lucide-react';
+import { WireframeImage } from './WireframeImage';
 
 const DEFAULT_NEWS_IMAGE = "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=1600&auto=format&fit=crop&q=90";
 
@@ -306,14 +307,13 @@ export const EditorialGrid = ({
                 const hdImg = getHdImageUrl(story.hero_image) || fallbackImg;
                 return (
                   <div key={`slide-${story.id}-${index}`} className="bbc-hero-slide-item">
-                    <img
+                    <WireframeImage
                       src={hdImg}
                       alt={story.canonical_title}
                       className="bbc-hero-poster-img"
                       loading={index === 0 ? "eager" : "lazy"}
                       fetchPriority={index === 0 ? "high" : "auto"}
-                      decoding="async"
-                      onError={(e) => { e.target.src = fallbackImg; }}
+                      fallbackSrc={fallbackImg}
                     />
                   </div>
                 );
@@ -438,11 +438,11 @@ export const EditorialGrid = ({
                   onClick={() => onSelectStory(story)}
                 >
                   <div className="bbc-two-feature-img-wrap">
-                    <img
+                    <WireframeImage
                       src={imgUrl}
                       alt={story.canonical_title}
                       className="bbc-two-feature-img"
-                      onError={(e) => { e.target.src = fallback; }}
+                      fallbackSrc={fallback}
                       loading="lazy"
                     />
                   </div>
@@ -488,11 +488,11 @@ export const EditorialGrid = ({
                 onClick={() => onSelectStory(sportStories[0])}
               >
                 <div className="bbc-sport-hero-img-wrap">
-                  <img
+                  <WireframeImage
                     src={getHdImageUrl(sportStories[0].hero_image) || getCategoryFallbackImage('sport', 0)}
                     alt={sportStories[0].canonical_title}
                     className="bbc-sport-hero-img"
-                    onError={(e) => { e.target.src = getCategoryFallbackImage('sport', 0); }}
+                    fallbackSrc={getCategoryFallbackImage('sport', 0)}
                     loading="lazy"
                   />
                   <div className="bbc-sport-live-badge">
@@ -523,11 +523,11 @@ export const EditorialGrid = ({
                     className="bbc-sport-side-card"
                     onClick={() => onSelectStory(story)}
                   >
-                    <img
+                    <WireframeImage
                       src={img}
                       alt={story.canonical_title}
                       className="bbc-sport-side-img"
-                      onError={(e) => { e.target.src = getCategoryFallbackImage('sport', i + 1); }}
+                      fallbackSrc={getCategoryFallbackImage('sport', i + 1)}
                       loading="lazy"
                     />
                     <div className="bbc-sport-side-body">
@@ -567,11 +567,11 @@ export const EditorialGrid = ({
                   onClick={() => onSelectStory(story)}
                 >
                   <div className="bbc-culture-img-wrap">
-                    <img
+                    <WireframeImage
                       src={img}
                       alt={story.canonical_title}
                       className="bbc-culture-img"
-                      onError={(e) => { e.target.src = getCategoryFallbackImage('culture', i); }}
+                      fallbackSrc={getCategoryFallbackImage('culture', i)}
                       loading="lazy"
                     />
                   </div>
@@ -601,11 +601,11 @@ export const EditorialGrid = ({
             onClick={() => onSelectStory(politicsSpotlight)}
           >
             <div className="bbc-spotlight-img-wrap">
-              <img
+              <WireframeImage
                 src={getHdImageUrl(politicsSpotlight.hero_image) || getCategoryFallbackImage('world', 0)}
                 alt={politicsSpotlight.canonical_title}
                 className="bbc-spotlight-img"
-                onError={(e) => { e.target.src = getCategoryFallbackImage('world', 0); }}
+                fallbackSrc={getCategoryFallbackImage('world', 0)}
                 loading="lazy"
               />
             </div>
@@ -655,11 +655,11 @@ export const EditorialGrid = ({
                   onClick={() => onSelectStory(story)}
                 >
                   <div className="bbc-three-img-wrap">
-                    <img
+                    <WireframeImage
                       src={img}
                       alt={story.canonical_title}
                       className="bbc-three-img"
-                      onError={(e) => { e.target.src = getCategoryFallbackImage('culture', i + 3); }}
+                      fallbackSrc={getCategoryFallbackImage('culture', i + 3)}
                       loading="lazy"
                     />
                   </div>
@@ -703,11 +703,11 @@ export const EditorialGrid = ({
                   onClick={() => onSelectStory(story)}
                 >
                   <div className="bbc-video-thumb-wrap">
-                    <img
+                    <WireframeImage
                       src={img}
                       alt={story.canonical_title}
                       className="bbc-video-thumb"
-                      onError={(e) => { e.target.src = getCategoryFallbackImage('world', i + 4); }}
+                      fallbackSrc={getCategoryFallbackImage('world', i + 4)}
                       loading="lazy"
                     />
                     <div className="bbc-video-play-btn">
@@ -745,11 +745,11 @@ export const EditorialGrid = ({
                   onClick={() => onSelectStory(story)}
                 >
                   <div className="bbc-two-feature-img-wrap">
-                    <img
+                    <WireframeImage
                       src={img}
                       alt={story.canonical_title}
                       className="bbc-two-feature-img"
-                      onError={(e) => { e.target.src = getCategoryFallbackImage('technology', i); }}
+                      fallbackSrc={getCategoryFallbackImage('technology', i)}
                       loading="lazy"
                     />
                   </div>
@@ -777,11 +777,11 @@ export const EditorialGrid = ({
         <section className="bbc-section-block">
           <div className="bbc-history-banner" onClick={() => onSelectStory(historyStory)}>
             <div className="bbc-history-img-wrap">
-              <img
+              <WireframeImage
                 src={getHdImageUrl(historyStory.hero_image) || getCategoryFallbackImage('world', 5)}
                 alt={historyStory.canonical_title}
                 className="bbc-history-img"
-                onError={(e) => { e.target.src = getCategoryFallbackImage('world', 5); }}
+                fallbackSrc={getCategoryFallbackImage('world', 5)}
                 loading="lazy"
               />
             </div>
@@ -811,11 +811,11 @@ export const EditorialGrid = ({
             </h3>
             {businessCol[0] && (
               <div className="bbc-col-lead-card" onClick={() => onSelectStory(businessCol[0])}>
-                <img
+                <WireframeImage
                   src={getHdImageUrl(businessCol[0].hero_image) || getCategoryFallbackImage('business', 0)}
                   alt={businessCol[0].canonical_title}
                   className="bbc-col-lead-img"
-                  onError={(e) => { e.target.src = getCategoryFallbackImage('business', 0); }}
+                  fallbackSrc={getCategoryFallbackImage('business', 0)}
                   loading="lazy"
                 />
                 <h4 className="bbc-col-lead-title">{businessCol[0].canonical_title}</h4>
@@ -839,11 +839,11 @@ export const EditorialGrid = ({
             </h3>
             {techCol[0] && (
               <div className="bbc-col-lead-card" onClick={() => onSelectStory(techCol[0])}>
-                <img
+                <WireframeImage
                   src={getHdImageUrl(techCol[0].hero_image) || getCategoryFallbackImage('technology', 1)}
                   alt={techCol[0].canonical_title}
                   className="bbc-col-lead-img"
-                  onError={(e) => { e.target.src = getCategoryFallbackImage('technology', 1); }}
+                  fallbackSrc={getCategoryFallbackImage('technology', 1)}
                   loading="lazy"
                 />
                 <h4 className="bbc-col-lead-title">{techCol[0].canonical_title}</h4>
@@ -867,11 +867,11 @@ export const EditorialGrid = ({
             </h3>
             {scienceCol[0] && (
               <div className="bbc-col-lead-card" onClick={() => onSelectStory(scienceCol[0])}>
-                <img
+                <WireframeImage
                   src={getHdImageUrl(scienceCol[0].hero_image) || getCategoryFallbackImage('science', 0)}
                   alt={scienceCol[0].canonical_title}
                   className="bbc-col-lead-img"
-                  onError={(e) => { e.target.src = getCategoryFallbackImage('science', 0); }}
+                  fallbackSrc={getCategoryFallbackImage('science', 0)}
                   loading="lazy"
                 />
                 <h4 className="bbc-col-lead-title">{scienceCol[0].canonical_title}</h4>
@@ -895,11 +895,11 @@ export const EditorialGrid = ({
             </h3>
             {healthCol[0] && (
               <div className="bbc-col-lead-card" onClick={() => onSelectStory(healthCol[0])}>
-                <img
+                <WireframeImage
                   src={getHdImageUrl(healthCol[0].hero_image) || getCategoryFallbackImage('health', 0)}
                   alt={healthCol[0].canonical_title}
                   className="bbc-col-lead-img"
-                  onError={(e) => { e.target.src = getCategoryFallbackImage('health', 0); }}
+                  fallbackSrc={getCategoryFallbackImage('health', 0)}
                   loading="lazy"
                 />
                 <h4 className="bbc-col-lead-title">{healthCol[0].canonical_title}</h4>
@@ -939,11 +939,11 @@ export const EditorialGrid = ({
                 onClick={() => onSelectStory(story)}
               >
                 <div className="bbc-culture-img-wrap">
-                  <img
+                  <WireframeImage
                     src={img}
                     alt={story.canonical_title}
                     className="bbc-culture-img"
-                    onError={(e) => { e.target.src = getCategoryFallbackImage('india', i); }}
+                    fallbackSrc={getCategoryFallbackImage('india', i)}
                     loading="lazy"
                   />
                   <div className="bbc-audio-badge" style={{ background: colors[i % colors.length] }}>
@@ -981,11 +981,11 @@ export const EditorialGrid = ({
                   onClick={() => onSelectStory(story)}
                 >
                   <div className="bbc-card-bottom-img-wrap">
-                    <img
+                    <WireframeImage
                       src={imgUrl}
                       alt={story.canonical_title}
                       className="bbc-card-bottom-img"
-                      onError={(e) => { e.target.src = fallback; }}
+                      fallbackSrc={fallback}
                       loading="lazy"
                     />
                   </div>

@@ -23,11 +23,9 @@ export const Footer = ({ onSelectCategory, onOpenAdmin, currentUser }) => {
           <a href="/news-sitemap.xml" target="_blank" rel="noreferrer">Google News Sitemap (48h)</a>
           <a href="/sitemap.xml" target="_blank" rel="noreferrer">XML Sitemap</a>
           <a href="/robots.txt" target="_blank" rel="noreferrer">robots.txt</a>
-          {isAdmin && (
-            <a href="#admin" onClick={(e) => { e.preventDefault(); onOpenAdmin(); }} style={{ color: '#ff6b6b' }}>
-              Admin Control Room
-            </a>
-          )}
+          <a href="#admin" onClick={(e) => { e.preventDefault(); onOpenAdmin(); }} style={{ color: '#ff6b6b', fontWeight: 700 }}>
+            Admin Control Room
+          </a>
         </div>
 
         <div className="bbc-footer-legal">

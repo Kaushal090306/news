@@ -13,22 +13,24 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 import { getHdImageUrl, getCategoryFallbackImage } from './EditorialGrid';
+import { WireframeImage } from './WireframeImage';
+import { getCachedBookmarks, setCachedBookmarks } from '../services/cache';
 
 export const BookmarksView = ({ onBack, onSelectStory, currentUser, onOpenAuth }) => {
-  const [bookmarks, setBookmarks] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [bookmarks, setBookmarks] = useState(() => getCachedBookmarks());
   const [searchFilter, setSearchFilter] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
 
   useEffect(() => {
-    if (!currentUser) {
-      setLoading(false);
-      return;
-    }
+    if (!currentUser) return;
     api.getBookmarks()
-      .then((res) => setBookmarks(res.bookmarks || []))
-      .catch((err) => console.error(err))
-      .finally(() => setLoading(false));
+      .then((res) => {
+        if (res && res.bookmarks) {
+          setBookmarks(res.bookmarks);
+          setCachedBookmarks(res.bookmarks);
+        }
+      })
+      .catch((err) => console.error(err));
   }, [currentUser]);
 
   const handleRemove = async (storyId, e) => {
@@ -162,12 +164,7 @@ export const BookmarksView = ({ onBack, onSelectStory, currentUser, onOpenAuth }
       </div>
 
       {/* Content Area */}
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '60px 0' }}>
-          <div style={{ display: 'inline-block', width: 36, height: 36, border: '3px solid #e2e8f0', borderTopColor: '#121212', borderRadius: '50%', animation: 'spin 0.8s linear infinite', marginBottom: 12 }} />
-          <div style={{ fontSize: 14, fontWeight: 700, color: '#64748b' }}>Loading your reading library...</div>
-        </div>
-      ) : bookmarks.length === 0 ? (
+      {bookmarks.length === 0 ? (
         /* Empty State with clean illustration */
         <div style={{ textAlign: 'center', padding: '80px 20px', background: '#fafafa', border: '1px dashed #cbd5e1', borderRadius: 8 }}>
           <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#ffffff', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto' }}>
@@ -230,12 +227,11 @@ export const BookmarksView = ({ onBack, onSelectStory, currentUser, onOpenAuth }
                 }}
               >
                 {/* Image Wrap with Category Badge */}
-                <div style={{ position: 'relative', height: 180, width: '100%', background: '#f1f5f9', overflow: 'hidden' }}>
-                  <img
+                <div style={{ position: 'relative', height: 180, width: '100%', background: '#e5e7eb', overflow: 'hidden' }}>
+                  <WireframeImage
                     src={hdImg}
                     alt={story.canonical_title}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    onError={(e) => { e.target.src = fallbackImg; }}
+                    fallbackSrc={fallbackImg}
                     loading="lazy"
                   />
                   <span
