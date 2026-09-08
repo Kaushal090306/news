@@ -102,7 +102,7 @@ export const AdminPanel = ({ onBack }) => {
       setTimeout(async () => {
         await loadData();
         setFetching(false);
-        setFetchMessage('✓ Ingestion cycle completed. New articles & clusters updated.');
+        setFetchMessage('Ingestion cycle completed. New articles & clusters updated.');
         setTimeout(() => setFetchMessage(''), 4000);
       }, 4000);
     } catch (e) {
@@ -163,7 +163,7 @@ export const AdminPanel = ({ onBack }) => {
       setNewSourceUrl('');
       setTestResult(null);
       await loadData();
-      alert('✓ New source added successfully!');
+      alert('New source added successfully!');
     } catch (e) {
       alert(e.message);
     }
@@ -203,7 +203,7 @@ export const AdminPanel = ({ onBack }) => {
       setNewUserName('');
       setNewUserPassword('');
       await loadData();
-      alert('✓ User created successfully!');
+      alert('User created successfully!');
     } catch (e) {
       alert(e.message);
     }
@@ -267,8 +267,9 @@ export const AdminPanel = ({ onBack }) => {
           <div className="bbc-stat-card">
             <div className="bbc-stat-label">Active Sources</div>
             <div className="bbc-stat-value">{stats.sources?.total_sources || sources.length}</div>
-            <div style={{ fontSize: 11, color: '#15803d', marginTop: 4 }}>
-              🟢 {stats.sources?.healthy_sources || sources.filter(s => s.active).length} Healthy
+            <div style={{ fontSize: 11, color: '#15803d', marginTop: 4, display: 'flex', alignItems: 'center' }}>
+              <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: '#16a34a', marginRight: 6 }} />
+              {stats.sources?.healthy_sources || sources.filter(s => s.active).length} Healthy
             </div>
           </div>
 
@@ -419,9 +420,9 @@ export const AdminPanel = ({ onBack }) => {
                     <td style={{ padding: '12px 16px', fontWeight: 600 }}>{src.total_articles || 0}</td>
                     <td style={{ padding: '12px 16px' }}>
                       <span className={`bbc-source-status-pill status-${src.status}`}>
-                        {src.status === 'healthy' && '🟢 Healthy'}
-                        {src.status === 'slow' && '🟡 Slow'}
-                        {src.status === 'failed' && '🔴 Failed'}
+                        {src.status === 'healthy' && 'Healthy'}
+                        {src.status === 'slow' && 'Slow'}
+                        {src.status === 'failed' && 'Failed'}
                       </span>
                     </td>
                     <td style={{ padding: '12px 16px' }}>{src.fetch_interval_minutes || src.fetch_interval || 15}m</td>
@@ -708,14 +709,14 @@ export const AdminPanel = ({ onBack }) => {
                 <div style={{ background: testResult.valid ? '#ecfdf5' : '#fee2e2', border: '1px solid', borderColor: testResult.valid ? '#10b981' : '#f87171', padding: '10px 12px', borderRadius: 4, marginBottom: 14, fontSize: 12 }}>
                   {testResult.valid ? (
                     <div>
-                      <span style={{ fontWeight: 800, color: '#047857' }}>✓ Valid Feed Detected!</span>
+                      <span style={{ fontWeight: 800, color: '#047857' }}>Valid Feed Detected!</span>
                       <div style={{ marginTop: 4, color: '#065f46' }}>
                         Type: {testResult.type} • Entries Found: {testResult.entries_found}
                         {testResult.sample_article_title && <div style={{ fontWeight: 600, marginTop: 2 }}>Sample: {testResult.sample_article_title}</div>}
                       </div>
                     </div>
                   ) : (
-                    <div style={{ color: '#b91c1c' }}>❌ Error testing URL: {testResult.error}</div>
+                    <div style={{ color: '#b91c1c' }}>Error testing URL: {testResult.error}</div>
                   )}
                 </div>
               )}

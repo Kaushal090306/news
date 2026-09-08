@@ -318,6 +318,12 @@ class IngestionPipeline:
                 
         conn.close()
         
+        try:
+            from app.api.stories import clear_feed_cache
+            clear_feed_cache()
+        except Exception:
+            pass
+        
         return {
             "sources_processed": len(sources),
             "articles_found": total_found,

@@ -64,7 +64,7 @@ export const BookmarksView = ({ onBack, onSelectStory, currentUser, onOpenAuth }
           Sign In to Access Your Saved Library
         </h2>
         <p style={{ color: '#64748b', fontSize: 14, lineHeight: 1.6, marginBottom: 24 }}>
-          Save in-depth investigations, breaking news, and multi-source analysis to read anytime across your phone, tablet, and computer.
+          Save in-depth investigations, breaking news, and exclusive reporting to read anytime across your phone, tablet, and computer.
         </p>
         <button 
           className="bbc-btn-register" 
@@ -104,8 +104,8 @@ export const BookmarksView = ({ onBack, onSelectStory, currentUser, onOpenAuth }
             </h1>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ background: '#f1f5f9', padding: '8px 16px', borderRadius: 4, fontSize: 13, fontWeight: 700, color: '#334155' }}>
-              📚 {bookmarks.length} {bookmarks.length === 1 ? 'Story Saved' : 'Stories Saved'}
+            <div style={{ background: '#f1f5f9', padding: '8px 16px', borderRadius: 4, fontSize: 13, fontWeight: 700, color: '#334155', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <BookOpen size={14} /> {bookmarks.length} {bookmarks.length === 1 ? 'Story Saved' : 'Stories Saved'}
             </div>
           </div>
         </div>
@@ -298,7 +298,7 @@ export const BookmarksView = ({ onBack, onSelectStory, currentUser, onOpenAuth }
                   {/* Footer with Source count and Remove button */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid #f1f5f9', paddingTop: 12, marginTop: 'auto' }}>
                     <span style={{ fontSize: 11, fontWeight: 700, color: '#006699', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      <Layers size={12} /> {story.sources_count || 1} verified sources
+                      <Layers size={12} /> Full Investigative Report
                     </span>
 
                     <button

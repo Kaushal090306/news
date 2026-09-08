@@ -16,6 +16,7 @@ export const DrawerMenu = ({
     News: true,
     Technology: false,
     Business: false,
+    Stock: false,
     Sport: false
   });
 
@@ -37,7 +38,7 @@ export const DrawerMenu = ({
     { id: 'all', label: 'Home', hasSub: false },
     {
       id: 'World',
-      label: 'News',
+      label: 'World',
       hasSub: true,
       subItems: [
         { id: 'World', label: 'World News' },
@@ -46,6 +47,18 @@ export const DrawerMenu = ({
         { id: 'US', label: 'US & Canada' },
         { id: 'Europe', label: 'Europe' },
         { id: 'MiddleEast', label: 'Middle East' }
+      ]
+    },
+    {
+      id: 'Stock',
+      label: 'Stock Markets',
+      hasSub: true,
+      subItems: [
+        { id: 'Stock', label: 'All Stock Markets' },
+        { id: 'Stock', label: 'BSE & NSE India' },
+        { id: 'Stock', label: 'Wall Street & US Equities' },
+        { id: 'Stock', label: 'Tech Stocks & AI' },
+        { id: 'Stock', label: 'IPOs & Earnings' }
       ]
     },
     {
@@ -64,7 +77,7 @@ export const DrawerMenu = ({
       label: 'Business',
       hasSub: true,
       subItems: [
-        { id: 'Business', label: 'Markets & Stocks' },
+        { id: 'Business', label: 'Markets & Economy' },
         { id: 'Business', label: 'Economy & Central Banks' },
         { id: 'Business', label: 'Global Trade' }
       ]
@@ -82,8 +95,7 @@ export const DrawerMenu = ({
     },
     { id: 'Health', label: 'Health', hasSub: false },
     { id: 'Culture', label: 'Culture', hasSub: false },
-    { id: 'Science', label: 'Earth & Science', hasSub: false },
-    { id: 'Live', label: 'Live Coverage', hasSub: false }
+    { id: 'Science', label: 'Earth & Science', hasSub: false }
   ];
 
   return (

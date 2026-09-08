@@ -11,7 +11,9 @@ import {
   Sparkles, 
   Bookmark,
   Calendar,
-  Lock
+  Lock,
+  AlertCircle,
+  Check
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -209,7 +211,7 @@ export const ProfileView = ({ onBack, currentUser, onUpdateUser, onOpenSettings,
               gap: 6
             }}
           >
-            <span>Mail Settings ⚙️</span>
+            <span>Mail Settings</span>
           </button>
         </div>
       </div>
@@ -222,8 +224,8 @@ export const ProfileView = ({ onBack, currentUser, onUpdateUser, onOpenSettings,
       )}
 
       {errorMessage && (
-        <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', color: '#b80000', padding: '12px 18px', borderRadius: 6, fontSize: 14, fontWeight: 600, marginBottom: 24 }}>
-          ⚠ {errorMessage}
+        <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', color: '#b80000', padding: '12px 18px', borderRadius: 6, fontSize: 14, fontWeight: 600, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <AlertCircle size={16} /> {errorMessage}
         </div>
       )}
 
@@ -271,7 +273,7 @@ export const ProfileView = ({ onBack, currentUser, onUpdateUser, onOpenSettings,
                 Account Membership Tier
               </label>
               <div style={{ padding: '10px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 4, fontSize: 13, color: '#334155', fontWeight: 600 }}>
-                {isAdmin ? '🛡️ Administrator Access' : '⭐ Standard Verified Reader'}
+                {isAdmin ? 'Administrator Access' : 'Standard Verified Reader'}
               </div>
             </div>
           </div>
@@ -368,7 +370,7 @@ export const ProfileView = ({ onBack, currentUser, onUpdateUser, onOpenSettings,
                     gap: 6
                   }}
                 >
-                  {active ? '✓ ' : '+ '}
+                  {active ? <Check size={12} /> : '+ '}
                   {cat}
                 </button>
               );

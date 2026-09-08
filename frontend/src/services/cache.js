@@ -31,11 +31,21 @@ const safeSet = (key, value) => {
 // FEEDS CACHE (Instant 0-delay authentic data even on first-time/incognito visit)
 export const getCachedFeeds = () => {
   const cached = safeGet(FEEDS_CACHE_KEY);
-  if (cached && Array.isArray(cached.stories) && cached.stories.length > 0) {
+  const seedTime = seedFeeds?.timestamp || 0;
+  
+  // Stale threshold: 15 minutes. If cached data is older than 15 mins, prefer fresh seed
+  const isStale = !cached || !cached.timestamp || (Date.now() - cached.timestamp > 15 * 60 * 1000);
+
+  if (cached && Array.isArray(cached.stories) && cached.stories.length > 0 && !isStale) {
+    // If bundled seedFeeds is newer than cached data, upgrade cache immediately
+    if (seedTime && (!cached.timestamp || cached.timestamp < seedTime)) {
+      safeSet(FEEDS_CACHE_KEY, seedFeeds);
+      return seedFeeds;
+    }
     return cached;
   }
-  // FIRST TIME VISIT / FRESH SESSION / INCOGNITO:
-  // Return authentic bundled seed data immediately with 0 microsecond delay
+  // FRESH VISIT / AFTER REFRESH / STALE CACHE:
+  // Return authentic fresh bundled seed data immediately with 0 microsecond delay
   if (seedFeeds && Array.isArray(seedFeeds.stories) && seedFeeds.stories.length > 0) {
     safeSet(FEEDS_CACHE_KEY, seedFeeds);
     return seedFeeds;

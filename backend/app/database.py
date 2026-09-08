@@ -16,25 +16,74 @@ def verify_pwd(password: str, hashed: str) -> bool:
     except Exception:
         return False
 
+_db_pool = None
+
+def get_pool():
+    global _db_pool
+    if _db_pool is None or _db_pool.closed:
+        try:
+            _db_pool = ThreadedConnectionPool(
+                minconn=2,
+                maxconn=20,
+                dsn=settings.DATABASE_URL,
+                cursor_factory=RealDictCursor
+            )
+        except Exception as e:
+            print(f"[Database] Error initializing connection pool: {e}")
+            _db_pool = None
+    return _db_pool
+
 def get_db_connection():
+    pool = get_pool()
+    if pool:
+        try:
+            return pool.getconn()
+        except Exception:
+            pass
     conn = psycopg2.connect(settings.DATABASE_URL, cursor_factory=RealDictCursor)
     conn.autocommit = True
     return conn
 
 @contextmanager
 def db_session() -> Generator[psycopg2.extensions.connection, None, None]:
-    conn = psycopg2.connect(settings.DATABASE_URL, cursor_factory=RealDictCursor)
+    pool = get_pool()
+    conn = None
+    using_pool = False
+    if pool:
+        try:
+            conn = pool.getconn()
+            using_pool = True
+            if conn.closed:
+                pool.putconn(conn, close=True)
+                conn = pool.getconn()
+        except Exception:
+            using_pool = False
+            conn = None
+
+    if conn is None:
+        conn = psycopg2.connect(settings.DATABASE_URL, cursor_factory=RealDictCursor)
+
     try:
         yield conn
         conn.commit()
     except Exception:
-        conn.rollback()
+        if not conn.closed:
+            conn.rollback()
         raise
     finally:
-        try:
-            conn.close()
-        except Exception:
-            pass
+        if using_pool and pool:
+            try:
+                pool.putconn(conn)
+            except Exception:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
+        else:
+            try:
+                conn.close()
+            except Exception:
+                pass
 
 def init_db():
     """Initializes PostgreSQL tables, indexes, and seeds the default admin account."""

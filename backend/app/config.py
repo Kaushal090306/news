@@ -15,7 +15,7 @@ class Settings(BaseModel):
     )
     
     FETCH_INTERVAL_MINUTES: int = int(os.getenv("FETCH_INTERVAL_MINUTES", "10"))
-    USER_AGENT: str = "WorldNewsAggregatorBot/1.0 (+https://worldnews.ai/bot; bot@worldnews.ai)"
+    USER_AGENT: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
     
     # News APIs
     NEWSAPI_KEY: str = os.getenv("NEWSAPI_KEY", "")

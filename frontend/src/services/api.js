@@ -65,6 +65,7 @@ export const api = {
     return request(`/stories/hero${cat}`);
   },
   getBreakingNews: () => request('/stories/breaking'),
+  getLiveMarkets: (country = 'india') => request(`/stories/markets/live?country=${encodeURIComponent(country)}`),
   getStoryDetail: (identifier) => request(`/stories/detail/${encodeURIComponent(identifier)}`),
 
   // Bookmarks

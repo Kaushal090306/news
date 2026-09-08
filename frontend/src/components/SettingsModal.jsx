@@ -131,14 +131,14 @@ export const SettingsModal = ({ isOpen, onClose, currentUser }) => {
         </div>
 
         {successMessage && (
-          <div style={{ background: '#dcfce7', color: '#15803d', padding: '10px 14px', borderRadius: 4, fontSize: 13, fontWeight: 600, marginBottom: 16 }}>
-            ✓ {successMessage}
+          <div style={{ background: '#dcfce7', color: '#15803d', padding: '10px 14px', borderRadius: 4, fontSize: 13, fontWeight: 600, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Check size={15} /> {successMessage}
           </div>
         )}
 
         {errorMessage && (
           <div style={{ background: '#fee2e2', color: '#b80000', padding: '10px 14px', borderRadius: 4, fontSize: 13, fontWeight: 600, marginBottom: 16 }}>
-            ⚠ {errorMessage}
+            {errorMessage}
           </div>
         )}
 
@@ -315,7 +315,7 @@ export const SettingsModal = ({ isOpen, onClose, currentUser }) => {
                           transition: 'all 0.15s ease'
                         }}
                       >
-                        {active ? '✓ ' : '+ '}
+                        {active && <Check size={12} style={{ display: 'inline', marginRight: 4 }} />}
                         {topic}
                       </button>
                     );

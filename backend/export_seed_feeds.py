@@ -47,7 +47,7 @@ def export_seed():
         print(f"Fetched {len(breaking_stories)} breaking stories.")
 
         # 4. Fetch category stories map
-        categories = ['business', 'technology', 'science', 'health', 'sport', 'culture', 'world', 'india']
+        categories = ['business', 'stock', 'technology', 'science', 'health', 'sport', 'culture', 'world', 'india']
         category_stories = {}
         for cat in categories:
             cursor.execute("""

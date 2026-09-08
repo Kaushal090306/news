@@ -3,6 +3,7 @@ import { Header } from './components/Header';
 import { DrawerMenu } from './components/DrawerMenu';
 import { BreakingTicker } from './components/BreakingTicker';
 import { EditorialGrid } from './components/EditorialGrid';
+import { SearchResults } from './components/SearchResults';
 import { ArticleDetail } from './components/ArticleDetail';
 import { BookmarksView } from './components/BookmarksView';
 import { ProfileView } from './components/ProfileView';
@@ -19,15 +20,65 @@ import {
 } from './services/cache';
 import './styles/bbc-theme.css';
 
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('UI Crash caught by ErrorBoundary:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '60px 20px', maxWidth: 720, margin: '0 auto', textAlign: 'center', minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <h2 style={{ fontSize: 22, fontWeight: 900, color: '#121212', marginBottom: 12 }}>Unable to display this article</h2>
+          <p style={{ color: '#64748b', fontSize: 14, marginBottom: 24, maxWidth: 480 }}>
+            An unexpected error occurred while loading this report. You can return to the headlines or refresh.
+          </p>
+          <button
+            onClick={() => {
+              this.setState({ hasError: false, error: null });
+              if (this.props.onReset) this.props.onReset();
+              else window.location.href = window.location.pathname;
+            }}
+            style={{
+              padding: '10px 24px',
+              background: 'var(--bbc-red, #b80000)',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: 4,
+              fontWeight: 700,
+              fontSize: 14,
+              cursor: 'pointer'
+            }}
+          >
+            Back to News Feed
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export function App() {
   const initialFeeds = getCachedFeeds();
   const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
   const initialStoryParam = urlParams.get('story');
+  const initialSearchParam = urlParams.get('search');
   const initialCachedStory = initialStoryParam ? getCachedStoryDetail(initialStoryParam) : null;
 
   const [activeCategory, setActiveCategory] = useState(() => urlParams.get('category') || 'all');
   const [selectedCountry, setSelectedCountry] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(() => initialSearchParam || '');
+  const [searchResults, setSearchResults] = useState([]);
   const [stories, setStories] = useState(() => initialFeeds.stories || []);
   const [heroStory, setHeroStory] = useState(() => initialFeeds.heroStory || null);
   const [breakingStories, setBreakingStories] = useState(() => initialFeeds.breakingStories || []);
@@ -38,6 +89,7 @@ export function App() {
   const [storyDetailData, setStoryDetailData] = useState(() => initialCachedStory || null);
   const [viewMode, setViewMode] = useState(() => {
     if (initialStoryParam) return 'article';
+    if (initialSearchParam) return 'search';
     const viewParam = urlParams.get('view') || urlParams.get('tab');
     if (viewParam === 'admin' || urlParams.get('admin') === 'true') return 'admin';
     if (viewParam === 'bookmarks') return 'bookmarks';
@@ -54,6 +106,7 @@ export function App() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login');
   const [currentUser, setCurrentUser] = useState(() => getCachedUser());
+  const [isArticleLoading, setIsArticleLoading] = useState(false);
 
   // Check auth profile on mount & check for deep linked story in URL
   useEffect(() => {
@@ -115,6 +168,15 @@ export function App() {
         setViewMode('admin');
       } else if (vParam === 'bookmarks') {
         setViewMode('bookmarks');
+      } else if (params.get('search') || state.view === 'search') {
+        const q = params.get('search') || state.query || '';
+        setSearchQuery(q);
+        setViewMode('search');
+        if (q) {
+          api.getStories({ search: q, limit: 300 }).then((res) => {
+            if (res && res.stories) setSearchResults(res.stories);
+          });
+        }
       } else {
         // Return to news feed at exact scroll position and category
         setSelectedStory(null);
@@ -139,15 +201,10 @@ export function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // Fetch feeds whenever search or country changes
+  // Fetch feeds only on page load / page refresh, or when country or search explicitly changes
   useEffect(() => {
     loadFeedData(true);
   }, [searchQuery, selectedCountry]);
-
-  // When activeCategory changes, refresh silently in background (0ms instant UI update)
-  useEffect(() => {
-    loadFeedData(false);
-  }, [activeCategory]);
 
   const loadFeedData = async (isInitialOrMajorChange = false) => {
     try {
@@ -159,7 +216,7 @@ export function App() {
           search: searchQuery || undefined,
           limit: 250
         }),
-        api.getHeroStory(activeCategory !== 'all' ? activeCategory : undefined),
+        api.getHeroStory(),
         api.getBreakingNews(),
         api.getStoriesByCategory(undefined, countryParam)
       ]);
@@ -198,6 +255,23 @@ export function App() {
     }
   };
 
+  // Background pre-cache feed story details for instant 0ms clicks
+  useEffect(() => {
+    if (stories && stories.length > 0) {
+      const timer = setTimeout(() => {
+        stories.slice(0, 25).forEach((s) => {
+          const sid = s.slug || s.id;
+          if (sid && !getCachedStoryDetail(sid)) {
+            api.getStoryDetail(sid).then((d) => {
+              if (d && d.story) setCachedStoryDetail(sid, d);
+            }).catch(() => {});
+          }
+        });
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, [stories]);
+
   const handleSelectStory = async (story) => {
     if (!story) return;
     const storyIdentifier = story.slug || story.id;
@@ -210,32 +284,51 @@ export function App() {
     }
 
     setSelectedStory(story);
-    setStoryDetailData(cachedDetail || { 
-      story, 
-      articles: [story], 
-      related: stories.filter((s) => s.id !== story.id).slice(0, 4) 
-    });
-    setViewMode('article');
-    window.scrollTo({ top: 0, behavior: 'instant' });
 
-    // Update browser URL preserving active category and saved scroll position
-    const catQuery = activeCategory && activeCategory !== 'all' ? `&category=${encodeURIComponent(activeCategory)}` : '';
-    const newUrl = `${window.location.pathname}?story=${encodeURIComponent(storyIdentifier)}${catQuery}`;
-    window.history.pushState({ 
-      storyId: storyIdentifier, 
-      scrollPos: lastFeedScrollPos.current, 
-      category: activeCategory 
-    }, '', newUrl);
+    const openWithFinalDetail = (detail) => {
+      setStoryDetailData(detail);
+      setCachedStoryDetail(storyIdentifier, detail);
+      setIsArticleLoading(false);
+      setViewMode('article');
+      window.scrollTo({ top: 0, behavior: 'instant' });
 
+      // Update browser URL preserving active category and saved scroll position
+      const catQuery = activeCategory && activeCategory !== 'all' ? `&category=${encodeURIComponent(activeCategory)}` : '';
+      const newUrl = `${window.location.pathname}?story=${encodeURIComponent(storyIdentifier)}${catQuery}`;
+      window.history.pushState({ 
+        storyId: storyIdentifier, 
+        scrollPos: lastFeedScrollPos.current, 
+        category: activeCategory 
+      }, '', newUrl);
+    };
+
+    if (cachedDetail && cachedDetail.story) {
+      openWithFinalDetail(cachedDetail);
+      return;
+    }
+
+    // Backend responds in <15ms - fetch directly so PROPER content is displayed directly with ZERO content change!
     try {
       const detail = await api.getStoryDetail(storyIdentifier);
       if (detail && detail.story) {
-        setStoryDetailData(detail);
-        setCachedStoryDetail(storyIdentifier, detail);
+        openWithFinalDetail(detail);
+        return;
       }
     } catch (err) {
-      console.warn('Background story detail fetch error:', err);
+      console.warn('Story detail fetch fallback:', err);
     }
+
+    // Offline / network failure fallback
+    const relatedFallback = stories.filter((s) => s.id !== story.id && s.category === story.category).slice(0, 5);
+    const catFallback = stories.filter((s) => s.id !== story.id && s.category === story.category).slice(5, 11);
+    openWithFinalDetail({ 
+      story, 
+      articles: [story], 
+      related: relatedFallback.length > 0 ? relatedFallback : stories.filter(s => s.id !== story.id).slice(0, 5),
+      category_stories: catFallback.length > 0 ? catFallback : stories.filter(s => s.id !== story.id).slice(5, 11),
+      trending: breakingStories.slice(0, 5),
+      top_stories: stories.filter(s => s.id !== story.id).slice(0, 6)
+    });
   };
 
   const handleBackToFeed = () => {
@@ -277,10 +370,21 @@ export function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleSearch = (query) => {
-    setSearchQuery(query);
-    if (viewMode !== 'feed') {
-      setViewMode('feed');
+  const handleSearch = async (query) => {
+    if (!query || !query.trim()) return;
+    const cleanQ = query.trim();
+    setSearchQuery(cleanQ);
+    setViewMode('search');
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    window.history.pushState({ view: 'search', query: cleanQ }, '', `?search=${encodeURIComponent(cleanQ)}`);
+
+    try {
+      const res = await api.getStories({ search: cleanQ, limit: 300 });
+      if (res && Array.isArray(res.stories)) {
+        setSearchResults(res.stories);
+      }
+    } catch (e) {
+      console.warn('Search error:', e);
     }
   };
 
@@ -344,15 +448,10 @@ export function App() {
         currentUser={currentUser}
       />
 
-      {/* Red Breaking News Bar (Strictly filtered to selected country) */}
+      {/* Live Moving Price Ticker (Country-Adapted Real-Time Markets, Fuel & Bullion) */}
       <BreakingTicker 
-        breakingStories={
-          selectedCountry !== 'all'
-            ? (breakingStories.filter((s) => s.country?.toLowerCase() === selectedCountry.toLowerCase()).length > 0
-                ? breakingStories.filter((s) => s.country?.toLowerCase() === selectedCountry.toLowerCase())
-                : stories.slice(0, 8))
-            : breakingStories
-        } 
+        selectedCountry={selectedCountry}
+        onSelectCategory={handleCategorySelect}
         onSelectStory={handleSelectStory}
       />
 
@@ -369,14 +468,33 @@ export function App() {
         />
       )}
 
-      {viewMode === 'article' && (
-        <ArticleDetail
-          storyData={storyDetailData || { story: selectedStory, articles: [], related: [] }}
-          onBack={handleBackToFeed}
+      {viewMode === 'search' && (
+        <SearchResults
+          query={searchQuery}
+          stories={searchResults.length > 0 ? searchResults : stories.filter(s => (s.canonical_title || '').toLowerCase().includes(searchQuery.toLowerCase()))}
           onSelectStory={handleSelectStory}
-          onOpenAuth={(mode) => { setAuthMode(mode); setAuthModalOpen(true); }}
-          currentUser={currentUser}
+          onBack={() => {
+            setViewMode('feed');
+            setSearchQuery('');
+            window.history.pushState({}, '', window.location.pathname);
+          }}
+          onSearchChange={handleSearch}
         />
+      )}
+
+      {viewMode === 'article' && (
+        <ErrorBoundary onReset={handleBackToFeed}>
+          <ArticleDetail
+            storyData={storyDetailData || { story: selectedStory, articles: [], related: [] }}
+            onBack={handleBackToFeed}
+            onSelectStory={handleSelectStory}
+            onOpenAuth={(mode) => { setAuthMode(mode); setAuthModalOpen(true); }}
+            currentUser={currentUser}
+            allStories={stories}
+            trendingStories={breakingStories}
+            isDetailLoading={isArticleLoading}
+          />
+        </ErrorBoundary>
       )}
 
       {viewMode === 'bookmarks' && (

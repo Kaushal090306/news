@@ -12,7 +12,10 @@ import {
   Sliders, 
   Send,
   Lock,
-  Smartphone
+  Smartphone,
+  User,
+  AlertCircle,
+  Check
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -166,7 +169,7 @@ export const SettingsView = ({ onBack, currentUser, onOpenProfile }) => {
                 gap: 6
               }}
             >
-              <span>👤 Edit Profile Info</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><User size={14} /> Edit Profile Info</span>
             </button>
           </div>
         </div>
@@ -180,14 +183,14 @@ export const SettingsView = ({ onBack, currentUser, onOpenProfile }) => {
       )}
 
       {errorMessage && (
-        <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', color: '#b80000', padding: '12px 18px', borderRadius: 6, fontSize: 14, fontWeight: 600, marginBottom: 24 }}>
-          ⚠ {errorMessage}
+        <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', color: '#b80000', padding: '12px 18px', borderRadius: 6, fontSize: 14, fontWeight: 600, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <AlertCircle size={16} /> {errorMessage}
         </div>
       )}
 
       {testSent && (
         <div style={{ background: '#eff6ff', border: '1px solid #93c5fd', color: '#1d4ed8', padding: '12px 18px', borderRadius: 6, fontSize: 14, fontWeight: 600, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
-          ✉️ Test email dispatched! Check {notificationEmail} for your sample intelligence briefing.
+          <Mail size={16} /> Test email dispatched! Check {notificationEmail} for your sample intelligence briefing.
         </div>
       )}
 
@@ -414,7 +417,7 @@ export const SettingsView = ({ onBack, currentUser, onOpenProfile }) => {
                         transition: 'all 0.15s ease'
                       }}
                     >
-                      {active ? '✓ ' : '+ '}
+                      {active ? <Check size={12} style={{ display: 'inline', marginRight: 4 }} /> : '+ '}
                       {topic}
                     </button>
                   );

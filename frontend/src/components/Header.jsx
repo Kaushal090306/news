@@ -7,7 +7,8 @@ import {
   X,
   ArrowRight,
   ChevronDown,
-  Globe
+  Globe,
+  Check
 } from 'lucide-react';
 import { UserProfileDropdown } from './UserProfileDropdown';
 
@@ -38,31 +39,32 @@ export const Header = ({
   // Standard category navigation tabs (without hardcoded India, which is now in the Country Dropdown!)
   const navItems = [
     { id: 'all', label: 'Home' },
-    { id: 'World', label: 'News' },
+    { id: 'World', label: 'World' },
     { id: 'Sport', label: 'Sport' },
     { id: 'Business', label: 'Business' },
+    { id: 'Stock', label: 'Stock' },
     { id: 'Technology', label: 'Technology' },
     { id: 'Health', label: 'Health' },
     { id: 'Culture', label: 'Culture' },
-    { id: 'Science', label: 'Earth' },
-    { id: 'Live', label: 'Live' }
+    { id: 'Science', label: 'Earth' }
   ];
 
   const countriesList = [
-    { code: 'all', name: 'Global / All Editions', flag: '🌍' },
-    { code: 'India', name: 'India', flag: '🇮🇳' },
-    { code: 'US', name: 'United States', flag: '🇺🇸' },
-    { code: 'UK', name: 'United Kingdom', flag: '🇬🇧' },
-    { code: 'France', name: 'France', flag: '🇫🇷' },
-    { code: 'Germany', name: 'Germany', flag: '🇩🇪' },
-    { code: 'Qatar', name: 'Qatar', flag: '🇶🇦' },
-    { code: 'Canada', name: 'Canada', flag: '🇨🇦' },
-    { code: 'Japan', name: 'Japan', flag: '🇯🇵' },
-    { code: 'Australia', name: 'Australia', flag: '🇦🇺' }
+    { code: 'all', name: 'Global / All Editions', iso: 'GLOBAL' },
+    { code: 'India', name: 'India', iso: 'IND' },
+    { code: 'US', name: 'United States', iso: 'USA' },
+    { code: 'UK', name: 'United Kingdom', iso: 'GBR' },
+    { code: 'France', name: 'France', iso: 'FRA' },
+    { code: 'Germany', name: 'Germany', iso: 'DEU' },
+    { code: 'Qatar', name: 'Qatar', iso: 'QAT' },
+    { code: 'Canada', name: 'Canada', iso: 'CAN' },
+    { code: 'Japan', name: 'Japan', iso: 'JPN' },
+    { code: 'Australia', name: 'Australia', iso: 'AUS' }
   ];
 
   const searchableTopics = [
     { id: 'World', label: 'World News', type: 'Category' },
+    { id: 'Stock', label: 'Stock & Financial Markets', type: 'Category' },
     { id: 'India', label: 'India & South Asia', type: 'Category' },
     { id: 'Technology', label: 'Technology & AI', type: 'Category' },
     { id: 'Business', label: 'Business & Economy', type: 'Category' },
@@ -314,10 +316,12 @@ export const Header = ({
                           }}
                         >
                           <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ fontSize: 16 }}>{c.flag}</span>
+                            <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 5px', borderRadius: 2, background: isSelected ? 'rgba(255,255,255,0.2)' : '#e2e8f0', color: isSelected ? '#ffffff' : '#334155' }}>
+                              {c.iso}
+                            </span>
                             <span>{c.name}</span>
                           </span>
-                          {isSelected && <span style={{ fontSize: 11, color: '#ffffff' }}>✓</span>}
+                          {isSelected && <Check size={13} color="#ffffff" />}
                         </div>
                       );
                     })}

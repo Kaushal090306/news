@@ -30,10 +30,10 @@ export const Footer = ({ onSelectCategory, onOpenAdmin, currentUser }) => {
 
         <div className="bbc-footer-legal">
           <p>
-            Copyright © 2026 World News Intelligence Platform. All rights reserved. The BBC and independent news provider logos are property of their respective broadcasters.
+            Copyright © 2026 World News Intelligence Platform. All rights reserved. World News delivers independent investigative journalism, live equity intelligence, and verified global reporting.
           </p>
           <p style={{ marginTop: 6, fontSize: 11, color: '#666' }}>
-            Powered by Neon PostgreSQL. Aggregated articles are attributed to verified sources under non-commercial fair discovery guidelines. Multi-source summaries are synthesized factually to prevent duplicate content clutter.
+            Fact-checked international coverage and original photojournalism curated by the World News Editorial Bureau.
           </p>
         </div>
       </div>
