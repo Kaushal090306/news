@@ -23,6 +23,7 @@ import {
 import { api } from '../services/api';
 import { getHdImageUrl, getCategoryFallbackImage, formatTimeAgo } from './EditorialGrid';
 import { WireframeImage } from './WireframeImage';
+import { getCachedFeeds } from '../services/cache';
 
 const safeFormatTimeAgo = (dateStr) => {
   if (typeof formatTimeAgo === 'function') {
@@ -223,6 +224,18 @@ export const ArticleDetail = ({
     return null;
   }, []);
 
+  // Resilient authentic stories pool: guarantees instant rendering even on cold direct deep links
+  const effectiveStoriesPool = useMemo(() => {
+    if (Array.isArray(allStories) && allStories.length > 0) return allStories;
+    try {
+      const cached = getCachedFeeds();
+      if (cached && Array.isArray(cached.stories) && cached.stories.length > 0) {
+        return cached.stories;
+      }
+    } catch (e) {}
+    return [];
+  }, [allStories]);
+
   // 1. Stories related specifically to THIS article (by title keywords matching)
   const specificRelatedStories = useMemo(() => {
     if (!story) return [];
@@ -241,7 +254,7 @@ export const ArticleDetail = ({
       .split(/\s+/)
       .filter(w => w.length > 3 && !stopWords.has(w));
 
-    const scored = allStories
+    const scored = effectiveStoriesPool
       .filter(s => s.id !== story.id)
       .map(s => {
         const sTitle = (s.canonical_title || '').toLowerCase();
@@ -261,16 +274,16 @@ export const ArticleDetail = ({
     const matched = scored.filter(item => item.score > 0).slice(0, 5).map(item => item.story);
     if (matched.length >= 3) return matched;
 
-    const catFallbacks = allStories.filter(s => s.id !== story.id && s.category === story.category).slice(0, 5);
+    const catFallbacks = effectiveStoriesPool.filter(s => s.id !== story.id && s.category === story.category).slice(0, 5);
     const merged = Array.from(new Map([...matched, ...catFallbacks].map(s => [s.id, s])).values());
     return merged.slice(0, 5);
-  }, [story?.id, story?.canonical_title, story?.category, allStories]);
+  }, [story?.id, story?.canonical_title, story?.category, effectiveStoriesPool]);
 
   // 2. Stories from user's device country (or World News fallback)
   const countryOrWorldNews = useMemo(() => {
     if (detectedCountry) {
       const countryLower = detectedCountry.toLowerCase();
-      const countryMatches = allStories.filter(s => {
+      const countryMatches = effectiveStoriesPool.filter(s => {
         if (s.id === story.id) return false;
         const cat = (s.category || '').toLowerCase();
         const title = (s.canonical_title || '').toLowerCase();
@@ -290,12 +303,12 @@ export const ArticleDetail = ({
       }
     }
 
-    const worldStories = allStories.filter(s => s.id !== story.id && (s.category === 'World' || s.category === 'Global')).slice(0, 5);
+    const worldStories = effectiveStoriesPool.filter(s => s.id !== story.id && (s.category === 'World' || s.category === 'Global')).slice(0, 5);
     return {
       title: 'World News Intelligence',
-      stories: worldStories.length > 0 ? worldStories : allStories.filter(s => s.id !== story.id).slice(0, 5)
+      stories: worldStories.length > 0 ? worldStories : effectiveStoriesPool.filter(s => s.id !== story.id).slice(0, 5)
     };
-  }, [story?.id, detectedCountry, allStories]);
+  }, [story?.id, detectedCountry, effectiveStoriesPool]);
 
   // 3. User reading interest frequency & recently viewed history in localStorage
   useEffect(() => {
@@ -330,13 +343,13 @@ export const ArticleDetail = ({
       const topCategories = Object.keys(catViews).sort((a, b) => catViews[b] - catViews[a]);
       const topCat = topCategories[0] || story.category || 'World';
 
-      let matching = allStories.filter(s => s.id !== story.id && s.category === topCat);
+      let matching = effectiveStoriesPool.filter(s => s.id !== story.id && s.category === topCat);
       if (matching.length < 4 && topCategories[1]) {
-        const secondMatches = allStories.filter(s => s.id !== story.id && s.category === topCategories[1]);
+        const secondMatches = effectiveStoriesPool.filter(s => s.id !== story.id && s.category === topCategories[1]);
         matching = [...matching, ...secondMatches];
       }
       if (matching.length < 4) {
-        matching = [...matching, ...allStories.filter(s => s.id !== story.id)];
+        matching = [...matching, ...effectiveStoriesPool.filter(s => s.id !== story.id)];
       }
 
       const unique = Array.from(new Map(matching.map(s => [s.id, s])).values()).slice(0, 4);
@@ -347,10 +360,10 @@ export const ArticleDetail = ({
     } catch (e) {
       return {
         topCategory: story.category || 'World',
-        stories: allStories.filter(s => s.id !== story.id).slice(0, 4)
+        stories: effectiveStoriesPool.filter(s => s.id !== story.id).slice(0, 4)
       };
     }
-  }, [story?.id, story?.category, allStories]);
+  }, [story?.id, story?.category, effectiveStoriesPool]);
 
   const recentlyViewedStories = useMemo(() => {
     try {
@@ -362,12 +375,19 @@ export const ArticleDetail = ({
   }, [story?.id]);
 
   // 4. Trending news items: diversified top news across ALL categories (World, Tech, Sport, Science, Health, Culture...)
-  // Uses allStories directly for instant rendering — no waiting for apiTrending from the detail fetch.
+  // Uses effectiveStoriesPool for instant 0ms rendering — never empty, zero waiting for background network calls.
   const trendingItems = useMemo(() => {
-    // Prefer apiTrending if already populated (cached), otherwise use allStories directly (always available)
-    const pool = (apiTrending && apiTrending.length > 0)
+    let pool = (apiTrending && apiTrending.length > 0)
       ? apiTrending
-      : (trendingStories && trendingStories.length > 0 ? trendingStories : allStories);
+      : (trendingStories && trendingStories.length > 0 ? trendingStories : effectiveStoriesPool);
+
+    if (!pool || pool.length === 0) {
+      try {
+        const cached = getCachedFeeds();
+        if (cached?.breakingStories?.length > 0) pool = cached.breakingStories;
+        else if (cached?.stories?.length > 0) pool = cached.stories;
+      } catch (e) {}
+    }
 
     const validStories = (pool || []).filter(s =>
       s && s.id !== story.id &&
@@ -392,7 +412,7 @@ export const ArticleDetail = ({
       }
     }
 
-    // 2nd pass: fill any remaining slots
+    // 2nd pass: fill any remaining slots from validStories
     for (const s of validStories) {
       if (picked.length >= 6) break;
       if (!usedIds.has(s.id)) {
@@ -401,19 +421,49 @@ export const ArticleDetail = ({
       }
     }
 
+    // 3rd pass fallback: guarantee 6 stories by pulling from effectiveStoriesPool
+    if (picked.length < 6) {
+      for (const s of effectiveStoriesPool) {
+        if (picked.length >= 6) break;
+        if (s.id !== story.id && !usedIds.has(s.id) && !String(s.id).startsWith('market-')) {
+          picked.push(s);
+          usedIds.add(s.id);
+        }
+      }
+    }
+
     return picked.length > 0 ? picked : validStories.slice(0, 6);
-  }, [story?.id, apiTrending, trendingStories, allStories]);
+  }, [story?.id, apiTrending, trendingStories, effectiveStoriesPool]);
 
-  // 5. Top stories of the day
+  // 5. Top stories of the day (Instant 0ms population)
   const topNewsItems = useMemo(() => {
-    const pool = (apiTopStories && apiTopStories.length > 0)
+    let pool = (apiTopStories && apiTopStories.length > 0)
       ? apiTopStories
-      : allStories;
+      : effectiveStoriesPool;
 
-    return (pool || [])
-      .filter((s) => s && s.id !== story.id && !String(s.id).startsWith('market-'))
-      .slice(0, 6);
-  }, [story?.id, apiTopStories, allStories]);
+    if (!pool || pool.length === 0) {
+      try {
+        const cached = getCachedFeeds();
+        if (cached?.stories?.length > 0) pool = cached.stories;
+      } catch (e) {}
+    }
+
+    const filtered = (pool || [])
+      .filter((s) => s && s.id !== story.id && !String(s.id).startsWith('market-'));
+
+    if (filtered.length >= 6) return filtered.slice(0, 6);
+
+    const ids = new Set(filtered.map(s => s.id));
+    const merged = [...filtered];
+    for (const s of effectiveStoriesPool) {
+      if (merged.length >= 6) break;
+      if (s.id !== story.id && !ids.has(s.id) && !String(s.id).startsWith('market-')) {
+        merged.push(s);
+        ids.add(s.id);
+      }
+    }
+    return merged.slice(0, 6);
+  }, [story?.id, apiTopStories, effectiveStoriesPool]);
 
   // Automatically choose the richest, most detailed investigative article in the cluster
   const activeArticle = articles.reduce((best, cur) => {

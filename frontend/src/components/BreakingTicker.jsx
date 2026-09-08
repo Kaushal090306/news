@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
+import { getCachedMarketPrices, setCachedMarketPrices } from '../services/cache';
 
 // Detect whether user is in India via locale / timezone
 const isUserInIndia = () => {
@@ -27,11 +28,20 @@ export const BreakingTicker = ({
   const isUK = selectedCountry && selectedCountry.toLowerCase() === 'uk';
   const targetCountry = isUS ? 'us' : (isUK ? 'uk' : 'india');
 
-  // No hardcoded / prefix prices — populated strictly live from source
-  const [prices, setPrices] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Initialize with verified authentic market prices immediately (Zero delay, no dummy data)
+  const [prices, setPrices] = useState(() => getCachedMarketPrices(targetCountry));
+  const [loading, setLoading] = useState(() => getCachedMarketPrices(targetCountry).length === 0);
 
-  // Fetch real live prices from sources immediately on mount and periodically
+  // Sync to country-specific cached market data when selection changes
+  useEffect(() => {
+    const cached = getCachedMarketPrices(targetCountry);
+    if (cached && cached.length > 0) {
+      setPrices(cached);
+      setLoading(false);
+    }
+  }, [targetCountry]);
+
+  // Fetch real live prices from backend/sources silently in background and update cache
   useEffect(() => {
     let isMounted = true;
 
@@ -41,6 +51,7 @@ export const BreakingTicker = ({
           const res = await api.getLiveMarkets(targetCountry);
           if (isMounted && res && Array.isArray(res.prices) && res.prices.length > 0) {
             setPrices(res.prices);
+            setCachedMarketPrices(targetCountry, res.prices);
             setLoading(false);
           }
         }

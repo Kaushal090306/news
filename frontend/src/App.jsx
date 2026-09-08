@@ -130,6 +130,12 @@ export function App() {
     // Check if a specific story is requested in the URL (e.g., ?story=slug-or-id)
     const storyParam = urlParams.get('story');
     if (storyParam) {
+      const cached = getCachedStoryDetail(storyParam);
+      if (cached && cached.story) {
+        setSelectedStory(cached.story);
+        setStoryDetailData(cached);
+        setViewMode('article');
+      }
       api.getStoryDetail(storyParam)
         .then((detail) => {
           if (detail && detail.story) {
@@ -497,8 +503,8 @@ export function App() {
             onSelectStory={handleSelectStory}
             onOpenAuth={(mode) => { setAuthMode(mode); setAuthModalOpen(true); }}
             currentUser={currentUser}
-            allStories={stories}
-            trendingStories={breakingStories}
+            allStories={stories && stories.length > 0 ? stories : (initialFeeds.stories || [])}
+            trendingStories={breakingStories && breakingStories.length > 0 ? breakingStories : (initialFeeds.breakingStories || [])}
             isDetailLoading={isArticleLoading}
           />
         </ErrorBoundary>

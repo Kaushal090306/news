@@ -250,7 +250,7 @@ def get_breaking_news():
     with db_session() as conn:
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT id, canonical_title, slug, category, country, last_updated_at, sources_count
+            SELECT id, canonical_title, slug, category, country, hero_image, last_updated_at, sources_count
             FROM stories
             WHERE status = 'published'
             ORDER BY is_breaking DESC, importance_score DESC, last_updated_at DESC
@@ -290,9 +290,83 @@ def get_hero_story(category: Optional[str] = None):
             cursor.execute("SELECT * FROM stories WHERE status = 'published' ORDER BY last_updated_at DESC LIMIT 1")
             story = cursor.fetchone()
             
-        result = {"story": serialize_story(dict(story)) if story else None}
+            result = {"story": serialize_story(dict(story)) if story else None}
         set_in_cache(cache_key, result, ttl_seconds=45)
         return result
+
+# In-memory global pool for trending stories and top stories (0ms cache, refreshed every 60s)
+_GLOBAL_TRENDING_POOL = None
+_GLOBAL_TOP_STORIES_POOL = None
+_GLOBAL_TRENDING_TS = 0
+_GLOBAL_TRENDING_LOCK = threading.Lock()
+
+def _fetch_global_trending_and_top_stories(cursor):
+    global _GLOBAL_TRENDING_POOL, _GLOBAL_TOP_STORIES_POOL, _GLOBAL_TRENDING_TS
+    now = time.time()
+    if _GLOBAL_TRENDING_POOL is not None and (now - _GLOBAL_TRENDING_TS) < 60:
+        return _GLOBAL_TRENDING_POOL, _GLOBAL_TOP_STORIES_POOL
+
+    with _GLOBAL_TRENDING_LOCK:
+        if _GLOBAL_TRENDING_POOL is not None and (now - _GLOBAL_TRENDING_TS) < 60:
+            return _GLOBAL_TRENDING_POOL, _GLOBAL_TOP_STORIES_POOL
+
+        try:
+            cursor.execute("""
+                WITH ranked AS (
+                    SELECT id, canonical_title, slug, category, hero_image, summary, sources_count, last_updated_at,
+                           ROW_NUMBER() OVER (
+                               PARTITION BY LOWER(category) 
+                               ORDER BY sources_count DESC, is_breaking DESC, last_updated_at DESC
+                           ) as rn
+                    FROM stories
+                    WHERE status = 'published'
+                      AND id NOT LIKE 'market-%%'
+                      AND hero_image IS NOT NULL AND hero_image != ''
+                      AND canonical_title NOT ILIKE %s
+                      AND canonical_title NOT ILIKE %s
+                )
+                SELECT id, canonical_title, slug, category, hero_image, summary, sources_count, last_updated_at
+                FROM ranked
+                WHERE rn <= 3
+                ORDER BY sources_count DESC, last_updated_at DESC
+                LIMIT 30
+            """, ('%coupon%', '%promo code%'))
+            rows = cursor.fetchall()
+            serialized = [serialize_story(dict(r)) for r in rows]
+
+            used_cats = set()
+            trending = []
+            used_ids = set()
+
+            # Pass 1: 1 per category for diversified global trend
+            for s in serialized:
+                cat = (s.get('category') or 'World').lower()
+                if cat not in used_cats and len(trending) < 6:
+                    used_cats.add(cat)
+                    used_ids.add(s.get('id'))
+                    trending.append(s)
+
+            # Pass 2: fill remaining slots up to 6
+            for s in serialized:
+                if s.get('id') not in used_ids and len(trending) < 6:
+                    used_ids.add(s.get('id'))
+                    trending.append(s)
+
+            # Top stories of the day: next 6
+            top_stories = [s for s in serialized if s.get('id') not in used_ids][:6]
+            if len(top_stories) < 4:
+                top_stories = [s for s in serialized if s not in trending][:6]
+
+            _GLOBAL_TRENDING_POOL = trending
+            _GLOBAL_TOP_STORIES_POOL = top_stories
+            _GLOBAL_TRENDING_TS = now
+        except Exception as e:
+            print("Error fetching global trending pool:", e)
+            if _GLOBAL_TRENDING_POOL is None:
+                _GLOBAL_TRENDING_POOL = []
+                _GLOBAL_TOP_STORIES_POOL = []
+
+    return _GLOBAL_TRENDING_POOL, _GLOBAL_TOP_STORIES_POOL
 
 @router.get("/detail/{identifier:path}")
 def get_story_detail(identifier: str):
@@ -491,92 +565,36 @@ def get_story_detail(identifier: str):
                     'caption': a.get('title', '')
                 })
         
-        # 1. Related stories in same category with images
+        # 1. Related stories and category stories (Single fast query for 11 items)
         cursor.execute("""
             SELECT id, canonical_title, slug, category, hero_image, sources_count, last_updated_at
             FROM stories
             WHERE category = %s AND id != %s AND status = 'published'
             ORDER BY importance_score DESC, last_updated_at DESC
-            LIMIT 5
+            LIMIT 11
         """, (story_dict['category'], story_dict['id']))
-        related = [serialize_story(dict(r)) for r in cursor.fetchall()]
-        related_ids = tuple([story_dict['id']] + [r['id'] for r in related])
+        cat_rows = [serialize_story(dict(r)) for r in cursor.fetchall()]
+        related = cat_rows[:5]
+        category_stories = cat_rows[5:11]
 
-        # 2. More articles in same category with images
-        format_ids = ','.join(['%s'] * len(related_ids))
-        cursor.execute(f"""
-            SELECT id, canonical_title, slug, category, hero_image, sources_count, last_updated_at
-            FROM stories
-            WHERE category = %s AND id NOT IN ({format_ids}) AND status = 'published'
-            ORDER BY last_updated_at DESC
-            LIMIT 6
-        """, (story_dict['category'], *related_ids))
-        category_stories = [serialize_story(dict(r)) for r in cursor.fetchall()]
+        # 2. Trending stories & Top stories across all categories (from 0ms global cached pool)
+        trending_pool, top_stories_pool = _fetch_global_trending_and_top_stories(cursor)
+        trending = [s for s in trending_pool if s.get('id') != story_dict['id']][:6]
+        top_stories = [s for s in top_stories_pool if s.get('id') != story_dict['id']][:6]
 
-        # 3. Trending stories across all categories (diversified, authentic global news)
-        trending = []
-        used_trending_ids = set([story_dict['id']])
-        used_titles = []
-        
-        for cat in ['World', 'Technology', 'Sport', 'Science', 'Health', 'Culture', 'India', 'Business']:
-            if len(trending) >= 6:
-                break
+        # Ensure fallback if pool was empty
+        if len(trending) < 4:
             cursor.execute("""
                 SELECT id, canonical_title, slug, category, hero_image, sources_count, last_updated_at
                 FROM stories
-                WHERE status = 'published'
-                  AND id != %s
-                  AND id NOT LIKE 'market-%%'
-                  AND LOWER(category) = LOWER(%s)
-                  AND hero_image IS NOT NULL AND hero_image != ''
-                  AND canonical_title NOT ILIKE %s
-                  AND canonical_title NOT ILIKE %s
-                ORDER BY sources_count DESC, is_breaking DESC, last_updated_at DESC
-                LIMIT 5
-            """, (story_dict['id'], cat, '%coupon%', '%promo code%'))
-            rows = cursor.fetchall()
-            for r in rows:
-                words = set(r['canonical_title'].lower().split()[:5])
-                if any(len(words.intersection(set(t.lower().split()[:5]))) >= 3 for t in used_titles):
-                    continue
-                trending.append(serialize_story(dict(r)))
-                used_trending_ids.add(r['id'])
-                used_titles.append(r['canonical_title'])
-                break
+                WHERE status = 'published' AND id != %s AND id NOT LIKE 'market-%%' AND hero_image IS NOT NULL AND hero_image != ''
+                ORDER BY last_updated_at DESC
+                LIMIT 6
+            """, (story_dict['id'],))
+            trending = [serialize_story(dict(r)) for r in cursor.fetchall()]
 
-        # If still fewer than 6, fill with top-sourced published news from remaining categories
-        if len(trending) < 6:
-            format_t_ids = ','.join(['%s'] * len(used_trending_ids))
-            cursor.execute(f"""
-                SELECT id, canonical_title, slug, category, hero_image, sources_count, last_updated_at
-                FROM stories
-                WHERE status = 'published'
-                  AND id NOT IN ({format_t_ids})
-                  AND id NOT LIKE 'market-%%'
-                  AND hero_image IS NOT NULL AND hero_image != ''
-                  AND canonical_title NOT ILIKE %s
-                  AND canonical_title NOT ILIKE %s
-                ORDER BY sources_count DESC, last_updated_at DESC
-                LIMIT %s
-            """, (*list(used_trending_ids), '%coupon%', '%promo code%', 6 - len(trending)))
-            for r in cursor.fetchall():
-                trending.append(serialize_story(dict(r)))
-
-        # 4. Top stories of the day (genuine high-impact global news across categories)
-        format_used_ids = ','.join(['%s'] * len(used_trending_ids))
-        cursor.execute(f"""
-            SELECT id, canonical_title, slug, category, hero_image, summary, sources_count, last_updated_at
-            FROM stories
-            WHERE status = 'published'
-              AND id NOT IN ({format_used_ids})
-              AND id NOT LIKE 'market-%%'
-              AND hero_image IS NOT NULL AND hero_image != ''
-              AND canonical_title NOT ILIKE %s
-              AND canonical_title NOT ILIKE %s
-            ORDER BY sources_count DESC, last_updated_at DESC
-            LIMIT 6
-        """, (*list(used_trending_ids), '%coupon%', '%promo code%'))
-        top_stories = [serialize_story(dict(r)) for r in cursor.fetchall()]
+        if len(top_stories) < 4:
+            top_stories = [s for s in trending]
 
         result = {
             "story": story_dict,

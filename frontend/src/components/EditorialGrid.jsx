@@ -805,7 +805,7 @@ export const EditorialGrid = ({
           <div className="bbc-section-header" onClick={() => onSelectCategory('World')} title="Click to view all World News">
             <span className="bbc-section-tag-red" />
             <h3 className="bbc-section-title">
-              TOP TRENDING & ESSENTIAL READS <ChevronRight size={18} className="bbc-section-chevron" />
+              TOP TRENDING <ChevronRight size={18} className="bbc-section-chevron" />
             </h3>
           </div>
           <div className="bbc-two-feature-grid">
