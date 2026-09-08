@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -637,14 +637,83 @@ export const EditorialGrid = ({
   }, [stories, selectedCountry, isCountryFiltered, streamCategory, visibleStreamCount]);
 
   const handlePrevSlide = useCallback((e) => {
-    e.stopPropagation();
+    if (e && e.stopPropagation) e.stopPropagation();
     setCurrentSlideIndex((prev) => (prev === 0 ? heroSliderStories.length - 1 : prev - 1));
   }, [heroSliderStories.length]);
 
   const handleNextSlide = useCallback((e) => {
-    e.stopPropagation();
+    if (e && e.stopPropagation) e.stopPropagation();
     setCurrentSlideIndex((prev) => (prev + 1) % heroSliderStories.length);
   }, [heroSliderStories.length]);
+
+  // Touch swipe gesture refs for mobile hero carousel
+  const touchStartXRef = useRef(0);
+  const touchStartYRef = useRef(0);
+  const touchEndXRef = useRef(0);
+  const touchEndYRef = useRef(0);
+  const isSwipingRef = useRef(false);
+  const swipeTimeoutRef = useRef(null);
+
+  const handleTouchStart = (e) => {
+    if (!e.touches || e.touches.length === 0) return;
+    touchStartXRef.current = e.touches[0].clientX;
+    touchStartYRef.current = e.touches[0].clientY;
+    touchEndXRef.current = e.touches[0].clientX;
+    touchEndYRef.current = e.touches[0].clientY;
+    isSwipingRef.current = false;
+  };
+
+  const handleTouchMove = (e) => {
+    if (!e.touches || e.touches.length === 0) return;
+    touchEndXRef.current = e.touches[0].clientX;
+    touchEndYRef.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = () => {
+    if (!heroSliderStories || heroSliderStories.length <= 1) return;
+    const deltaX = touchEndXRef.current - touchStartXRef.current;
+    const deltaY = touchEndYRef.current - touchStartYRef.current;
+    const absDeltaX = Math.abs(deltaX);
+    const absDeltaY = Math.abs(deltaY);
+
+    // Minimum swipe threshold of 40px and predominantly horizontal motion
+    if (absDeltaX > 40 && absDeltaX > absDeltaY * 1.1) {
+      isSwipingRef.current = true;
+      if (swipeTimeoutRef.current) clearTimeout(swipeTimeoutRef.current);
+      swipeTimeoutRef.current = setTimeout(() => {
+        isSwipingRef.current = false;
+      }, 400);
+
+      if (deltaX < 0) {
+        // Swiped Left -> advance to next slide (like PC right arrow)
+        handleNextSlide();
+      } else {
+        // Swiped Right -> return to previous slide (like PC left arrow)
+        handlePrevSlide();
+      }
+    }
+  };
+
+  const handleTouchCancel = () => {
+    isSwipingRef.current = false;
+  };
+
+  const handlePosterClick = () => {
+    // If a horizontal swipe gesture just occurred, do not open the article
+    if (isSwipingRef.current) {
+      isSwipingRef.current = false;
+      return;
+    }
+    if (activeStory) {
+      onSelectStory(activeStory);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (swipeTimeoutRef.current) clearTimeout(swipeTimeoutRef.current);
+    };
+  }, []);
 
   const activeStory = heroSliderStories[currentSlideIndex] || heroSliderStories[0] || stories[0];
 
@@ -660,7 +729,11 @@ export const EditorialGrid = ({
             className="bbc-hero-poster-container"
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            onClick={() => onSelectStory(activeStory)}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchCancel}
+            onClick={handlePosterClick}
           >
             {/* Horizontal Sliding Track */}
             <div
@@ -692,6 +765,7 @@ export const EditorialGrid = ({
                 <span>LIVE</span>
               </div>
             )}
+
 
             {/* Clean minimalist left navigation arrow */}
             <button

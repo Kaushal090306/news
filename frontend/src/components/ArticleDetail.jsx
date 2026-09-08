@@ -159,7 +159,7 @@ export const ArticleDetail = ({
       setUserAnnotations(updated);
       try {
         localStorage.setItem(`article_annotations_${storyId}`, JSON.stringify(updated));
-      } catch (e) {}
+      } catch (e) { }
     } catch (e) {
       console.warn("Could not format range:", e);
     }
@@ -201,10 +201,10 @@ export const ArticleDetail = ({
     );
   }
 
-  const { 
-    story, 
-    articles = [], 
-    related: apiRelated = [], 
+  const {
+    story,
+    articles = [],
+    related: apiRelated = [],
     category_stories: apiCategoryStories = [],
     trending: apiTrending = [],
     top_stories: apiTopStories = []
@@ -220,7 +220,7 @@ export const ArticleDetail = ({
       if (tz.includes('London') || loc.includes('-gb') || loc.includes('-uk')) return 'United Kingdom';
       if (tz.startsWith('Australia/') || loc.includes('-au')) return 'Australia';
       if (tz.includes('Toronto') || tz.includes('Vancouver') || loc.includes('-ca')) return 'Canada';
-    } catch (e) {}
+    } catch (e) { }
     return null;
   }, []);
 
@@ -232,7 +232,7 @@ export const ArticleDetail = ({
       if (cached && Array.isArray(cached.stories) && cached.stories.length > 0) {
         return cached.stories;
       }
-    } catch (e) {}
+    } catch (e) { }
     return [];
   }, [allStories]);
 
@@ -333,7 +333,7 @@ export const ArticleDetail = ({
         ...filtered
       ].slice(0, 10);
       localStorage.setItem('bbc_recently_viewed_stories', JSON.stringify(updated));
-    } catch (e) {}
+    } catch (e) { }
   }, [story?.id]);
 
   // Compute "Articles You May Like" based on repeatedly visited categories
@@ -386,7 +386,7 @@ export const ArticleDetail = ({
         const cached = getCachedFeeds();
         if (cached?.breakingStories?.length > 0) pool = cached.breakingStories;
         else if (cached?.stories?.length > 0) pool = cached.stories;
-      } catch (e) {}
+      } catch (e) { }
     }
 
     const validStories = (pool || []).filter(s =>
@@ -445,7 +445,7 @@ export const ArticleDetail = ({
       try {
         const cached = getCachedFeeds();
         if (cached?.stories?.length > 0) pool = cached.stories;
-      } catch (e) {}
+      } catch (e) { }
     }
 
     const filtered = (pool || [])
@@ -943,7 +943,7 @@ export const ArticleDetail = ({
       name: 'X (Twitter)',
       icon: (
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
         </svg>
       ),
       url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(story.canonical_title)}&url=${encodeURIComponent(directShareUrl)}`,
@@ -959,7 +959,7 @@ export const ArticleDetail = ({
       name: 'LinkedIn',
       icon: (
         <svg width="17" height="17" viewBox="0 0 24 24" fill="#0A66C2">
-          <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 10.9v8.37H9.2V10.9H6.46M7.83 6.24c-.9 0-1.63.73-1.63 1.63s.73 1.63 1.63 1.63 1.63-.73 1.63-1.63-.73-1.63-1.63-1.63z"/>
+          <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 10.9v8.37H9.2V10.9H6.46M7.83 6.24c-.9 0-1.63.73-1.63 1.63s.73 1.63 1.63 1.63 1.63-.73 1.63-1.63-.73-1.63-1.63-1.63z" />
         </svg>
       ),
       url: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(directShareUrl)}`,
@@ -1097,44 +1097,44 @@ export const ArticleDetail = ({
               </div>
             ) : (
               (!currentUser ? originalParagraphs.slice(0, 2) : originalParagraphs).map((item, idx) => {
-              if (item.type === 'heading') {
+                if (item.type === 'heading') {
+                  return (
+                    <h2 key={idx} className="bbc-article-original-heading">
+                      {item.text}
+                    </h2>
+                  );
+                }
+
+                const inlinePhotos = imagesByParaIndex[idx] || [];
+
                 return (
-                  <h2 key={idx} className="bbc-article-original-heading">
-                    {item.text}
-                  </h2>
-                );
-              }
+                  <React.Fragment key={idx}>
+                    <p className={`bbc-article-original-para ${idx === 0 ? 'lead' : ''}`} style={currentFontSize}>
+                      {renderFormattedParagraph(item, idx)}
+                    </p>
 
-              const inlinePhotos = imagesByParaIndex[idx] || [];
-
-              return (
-                <React.Fragment key={idx}>
-                  <p className={`bbc-article-original-para ${idx === 0 ? 'lead' : ''}`} style={currentFontSize}>
-                    {renderFormattedParagraph(item, idx)}
-                  </p>
-
-                  {/* Inline Original Images distributed naturally throughout the article */}
-                  {inlinePhotos.map((photo) => (
-                    <figure key={`inline-${photo.globalIndex}`} className="bbc-article-inline-figure">
-                      <div
-                        className="bbc-article-inline-img-wrap"
-                        onClick={() => setLightboxIndex(photo.globalIndex)}
-                        title="Click to view full-resolution photo"
-                      >
-                        <WireframeImage
-                          src={photo.url}
-                          alt={photo.caption || 'Field photojournalism'}
-                          loading="lazy"
-                        />
-                      </div>
-                      <figcaption className="bbc-article-inline-caption">
-                        <span>{photo.caption}</span>
-                        <span className="bbc-article-inline-zoom-hint" onClick={() => setLightboxIndex(photo.globalIndex)}>
-                          <ZoomIn size={12} /> Full Size
-                        </span>
-                      </figcaption>
-                    </figure>
-                  ))}
+                    {/* Inline Original Images distributed naturally throughout the article */}
+                    {inlinePhotos.map((photo) => (
+                      <figure key={`inline-${photo.globalIndex}`} className="bbc-article-inline-figure">
+                        <div
+                          className="bbc-article-inline-img-wrap"
+                          onClick={() => setLightboxIndex(photo.globalIndex)}
+                          title="Click to view full-resolution photo"
+                        >
+                          <WireframeImage
+                            src={photo.url}
+                            alt={photo.caption || 'Field photojournalism'}
+                            loading="lazy"
+                          />
+                        </div>
+                        <figcaption className="bbc-article-inline-caption">
+                          <span>{photo.caption}</span>
+                          <span className="bbc-article-inline-zoom-hint" onClick={() => setLightboxIndex(photo.globalIndex)}>
+                            <ZoomIn size={12} /> Full Size
+                          </span>
+                        </figcaption>
+                      </figure>
+                    ))}
                   </React.Fragment>
                 );
               })
@@ -1293,14 +1293,14 @@ export const ArticleDetail = ({
           BOTTOM DISCOVERY SECTION: TRENDING (STRICT 2 ROWS) & PERSONALIZED SHELF
           ======================================================== */}
       <section className="bbc-article-bottom-discovery">
-        <div className="bbc-discovery-header-row">
+        {/* <div className="bbc-discovery-header-row">
           <h2 className="bbc-discovery-main-heading">
             More from World News & Top Stories of the Day
           </h2>
           <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--bbc-red)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
             Live Global Updates
           </span>
-        </div>
+        </div> */}
 
         {/* 1. Trending News Shelf (Strictly 2 rows, NO rank numbers, NO hover effects) */}
         {trendingItems.length > 0 && (
@@ -1310,7 +1310,7 @@ export const ArticleDetail = ({
                 <TrendingUp size={18} color="var(--bbc-red)" />
                 <span>Top Trending Across the Globe</span>
               </div>
-              <span className="bbc-trending-shelf-badge">Verified Global Trends</span>
+              {/* <span className="bbc-trending-shelf-badge">Verified Global Trends</span> */}
             </div>
             <div className="bbc-trending-2row-grid">
               {trendingItems.slice(0, 6).map((trend, idx) => (

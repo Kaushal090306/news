@@ -907,6 +907,7 @@ button {
   background: #111827;
   cursor: pointer;
   user-select: none;
+  touch-action: pan-y;
 }
 
 @media (min-width: 768px) {
@@ -1080,6 +1081,13 @@ button {
   background: rgba(255, 255, 255, 0.4);
   transition: all 0.2s ease;
   cursor: pointer;
+  border: none;
+  padding: 0;
+  outline: none;
+}
+
+.bbc-slider-dot:hover {
+  background: rgba(255, 255, 255, 0.8);
 }
 
 .bbc-slider-dot.active {
@@ -4041,6 +4049,7 @@ img,
 
   .bbc-hero-poster-container {
     height: 310px !important;
+    touch-action: pan-y !important;
   }
 
   .bbc-hero-overlay-headline {
