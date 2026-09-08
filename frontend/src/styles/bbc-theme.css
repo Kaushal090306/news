@@ -5326,6 +5326,8 @@ img,
   margin-top: 48px;
   padding-top: 36px;
   border-top: 3px solid #121212;
+  content-visibility: auto;
+  contain-intrinsic-size: 0 1200px;
 }
 
 .bbc-discovery-header-row {

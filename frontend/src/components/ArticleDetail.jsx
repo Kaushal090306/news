@@ -1275,6 +1275,8 @@ export const ArticleDetail = ({
                       src={getStoryThumb(trend)}
                       alt={trend.canonical_title}
                       className="bbc-trending-clean-thumb"
+                      loading="lazy"
+                      fetchPriority="low"
                       fallbackSrc={getCategoryFallbackImage ? getCategoryFallbackImage(trend.category) : ''}
                     />
                   </div>
@@ -1330,6 +1332,8 @@ export const ArticleDetail = ({
                         src={getStoryThumb(rec)}
                         alt={rec.canonical_title}
                         className="bbc-personal-thumb"
+                        loading="lazy"
+                        fetchPriority="low"
                         fallbackSrc={getCategoryFallbackImage ? getCategoryFallbackImage(rec.category) : ''}
                       />
                     </div>
@@ -1371,6 +1375,8 @@ export const ArticleDetail = ({
                         src={getStoryThumb(hist)}
                         alt={hist.canonical_title}
                         className="bbc-personal-thumb"
+                        loading="lazy"
+                        fetchPriority="low"
                         fallbackSrc={getCategoryFallbackImage ? getCategoryFallbackImage(hist.category) : ''}
                       />
                     </div>
@@ -1405,6 +1411,8 @@ export const ArticleDetail = ({
                   src={getStoryThumb(topStory)}
                   alt={topStory.canonical_title}
                   className="bbc-discovery-card-img"
+                  loading="lazy"
+                  fetchPriority="low"
                   fallbackSrc={getCategoryFallbackImage ? getCategoryFallbackImage(topStory.category) : ''}
                 />
               </div>

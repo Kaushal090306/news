@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 
 /**
- * Direct Original & Category Fallback Image Renderer
- * 
- * 1. Shows original source images instantly.
- * 2. If an article does not have an image, it seamlessly displays the authentic category image.
- * 3. Smooth error handling: switches to category fallback immediately on 404/network error.
+ * High-performance Image Renderer
+ *
+ * - Zero unnecessary re-renders: uses ref + DOM mutation for fallback logic
+ * - No skeleton/wireframe phase — image appears immediately from browser cache or network
+ * - Seamlessly falls back to category image on 404/network error
+ * - React.memo prevents re-renders unless src/fallbackSrc props actually change
  */
 export const WireframeImage = React.memo(({
   src,
@@ -17,20 +18,26 @@ export const WireframeImage = React.memo(({
   fetchPriority = 'high',
   onClick
 }) => {
-  const initial = src || fallbackSrc;
-  const [currentSrc, setCurrentSrc] = useState(initial);
-  const [hasFailed, setHasFailed] = useState(false);
+  const imgRef = useRef(null);
+  const hasFailed = useRef(false);
+  const lastSrc = useRef(null);
 
+  // Only update the DOM src when the prop actually changes — no setState, no re-render
   useEffect(() => {
-    setCurrentSrc(src || fallbackSrc);
-    setHasFailed(false);
+    const newSrc = src || fallbackSrc;
+    if (!imgRef.current || newSrc === lastSrc.current) return;
+    lastSrc.current = newSrc;
+    hasFailed.current = false;
+    imgRef.current.src = newSrc;
+    imgRef.current.style.display = 'block';
   }, [src, fallbackSrc]);
 
-  const activeSrc = currentSrc || fallbackSrc;
+  const activeSrc = src || fallbackSrc;
   if (!activeSrc) return null;
 
   return (
     <img
+      ref={imgRef}
       src={activeSrc}
       alt={alt}
       className={className}
@@ -39,12 +46,10 @@ export const WireframeImage = React.memo(({
       decoding="async"
       onClick={onClick}
       onError={(e) => {
-        // If the primary image fails and we haven't tried the fallback yet, switch to fallbackSrc
-        if (!hasFailed && fallbackSrc && activeSrc !== fallbackSrc) {
-          setHasFailed(true);
-          setCurrentSrc(fallbackSrc);
+        if (!hasFailed.current && fallbackSrc && e.currentTarget.src !== fallbackSrc) {
+          hasFailed.current = true;
+          e.currentTarget.src = fallbackSrc;
         } else {
-          // If fallback also fails or none exists, cleanly hide image
           e.currentTarget.style.display = 'none';
         }
       }}
@@ -57,6 +62,9 @@ export const WireframeImage = React.memo(({
       }}
     />
   );
+}, (prev, next) => {
+  // Custom equality: only re-render if actual image sources change
+  return prev.src === next.src && prev.fallbackSrc === next.fallbackSrc && prev.className === next.className;
 });
 
 export default WireframeImage;

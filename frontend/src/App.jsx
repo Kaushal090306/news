@@ -485,7 +485,14 @@ export function App() {
       {viewMode === 'article' && (
         <ErrorBoundary onReset={handleBackToFeed}>
           <ArticleDetail
-            storyData={storyDetailData || { story: selectedStory, articles: [], related: [] }}
+            storyData={storyDetailData || {
+              story: selectedStory,
+              articles: selectedStory ? [selectedStory] : [],
+              related: stories.filter(s => s.id !== selectedStory?.id && s.category === selectedStory?.category).slice(0, 5),
+              category_stories: stories.filter(s => s.id !== selectedStory?.id && s.category === selectedStory?.category).slice(0, 6),
+              trending: breakingStories.filter(s => s.id !== selectedStory?.id).slice(0, 6),
+              top_stories: stories.filter(s => s.id !== selectedStory?.id).slice(0, 6)
+            }}
             onBack={handleBackToFeed}
             onSelectStory={handleSelectStory}
             onOpenAuth={(mode) => { setAuthMode(mode); setAuthModalOpen(true); }}
