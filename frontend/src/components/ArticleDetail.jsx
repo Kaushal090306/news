@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Share2,
   Bookmark,
@@ -209,8 +209,8 @@ export const ArticleDetail = ({
     top_stories: apiTopStories = []
   } = storyData;
 
-  // Detect user country from device timezone/locale with non-blocking probe
-  const [detectedCountry, setDetectedCountry] = useState(() => {
+  // Detect user country from device timezone/locale - instant, no network call needed
+  const detectedCountry = useMemo(() => {
     try {
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
       const loc = (navigator.language || '').toLowerCase();
@@ -221,39 +221,10 @@ export const ArticleDetail = ({
       if (tz.includes('Toronto') || tz.includes('Vancouver') || loc.includes('-ca')) return 'Canada';
     } catch (e) {}
     return null;
-  });
-
-  useEffect(() => {
-    const controller = new AbortController();
-    const probeIp = async () => {
-      try {
-        const timeout = setTimeout(() => controller.abort(), 1200);
-        const res = await fetch('https://ipapi.co/json/', { signal: controller.signal });
-        clearTimeout(timeout);
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.country_name) {
-            setDetectedCountry(data.country_name);
-          }
-        }
-      } catch (e) {}
-    };
-    probeIp();
-    return () => controller.abort();
   }, []);
 
-  // Thumbnail helper: ensures clean HD photo and eliminates junk logos
-  const getStoryThumb = (item) => {
-    if (!item) return '';
-    const imgUrl = item.hero_image || item.image_url;
-    if (imgUrl && !isJunkOrLogoImage({ url: imgUrl })) {
-      return getHdImageUrl ? getHdImageUrl(imgUrl) : imgUrl;
-    }
-    return getCategoryFallbackImage ? getCategoryFallbackImage(item.category) : '';
-  };
-
   // 1. Stories related specifically to THIS article (by title keywords matching)
-  const specificRelatedStories = (() => {
+  const specificRelatedStories = useMemo(() => {
     if (!story) return [];
     const stopWords = new Set([
       'the', 'and', 'for', 'that', 'this', 'with', 'from', 'have', 'were', 'what',
@@ -293,10 +264,10 @@ export const ArticleDetail = ({
     const catFallbacks = allStories.filter(s => s.id !== story.id && s.category === story.category).slice(0, 5);
     const merged = Array.from(new Map([...matched, ...catFallbacks].map(s => [s.id, s])).values());
     return merged.slice(0, 5);
-  })();
+  }, [story?.id, story?.canonical_title, story?.category, allStories]);
 
   // 2. Stories from user's device country (or World News fallback)
-  const countryOrWorldNews = (() => {
+  const countryOrWorldNews = useMemo(() => {
     if (detectedCountry) {
       const countryLower = detectedCountry.toLowerCase();
       const countryMatches = allStories.filter(s => {
@@ -324,7 +295,7 @@ export const ArticleDetail = ({
       title: 'World News Intelligence',
       stories: worldStories.length > 0 ? worldStories : allStories.filter(s => s.id !== story.id).slice(0, 5)
     };
-  })();
+  }, [story?.id, detectedCountry, allStories]);
 
   // 3. User reading interest frequency & recently viewed history in localStorage
   useEffect(() => {
@@ -353,7 +324,7 @@ export const ArticleDetail = ({
   }, [story?.id]);
 
   // Compute "Articles You May Like" based on repeatedly visited categories
-  const personalizedRecommendations = (() => {
+  const personalizedRecommendations = useMemo(() => {
     try {
       const catViews = JSON.parse(localStorage.getItem('bbc_user_category_views') || '{}');
       const topCategories = Object.keys(catViews).sort((a, b) => catViews[b] - catViews[a]);
@@ -379,19 +350,21 @@ export const ArticleDetail = ({
         stories: allStories.filter(s => s.id !== story.id).slice(0, 4)
       };
     }
-  })();
+  }, [story?.id, story?.category, allStories]);
 
-  const recentlyViewedStories = (() => {
+  const recentlyViewedStories = useMemo(() => {
     try {
       const recents = JSON.parse(localStorage.getItem('bbc_recently_viewed_stories') || '[]');
       return recents.filter(r => r.id !== story.id).slice(0, 4);
     } catch (e) {
       return [];
     }
-  })();
+  }, [story?.id]);
 
-  // 4. Trending news items: diversified top news across all categories (World, Tech, Sport, Science, Health, Culture, etc.)
-  const trendingItems = (() => {
+  // 4. Trending news items: diversified top news across ALL categories (World, Tech, Sport, Science, Health, Culture...)
+  // Uses allStories directly for instant rendering — no waiting for apiTrending from the detail fetch.
+  const trendingItems = useMemo(() => {
+    // Prefer apiTrending if already populated (cached), otherwise use allStories directly (always available)
     const pool = (apiTrending && apiTrending.length > 0)
       ? apiTrending
       : (trendingStories && trendingStories.length > 0 ? trendingStories : allStories);
@@ -419,7 +392,7 @@ export const ArticleDetail = ({
       }
     }
 
-    // 2nd pass: fill any remaining slots with other top stories
+    // 2nd pass: fill any remaining slots
     for (const s of validStories) {
       if (picked.length >= 6) break;
       if (!usedIds.has(s.id)) {
@@ -429,10 +402,10 @@ export const ArticleDetail = ({
     }
 
     return picked.length > 0 ? picked : validStories.slice(0, 6);
-  })();
+  }, [story?.id, apiTrending, trendingStories, allStories]);
 
   // 5. Top stories of the day
-  const topNewsItems = (() => {
+  const topNewsItems = useMemo(() => {
     const pool = (apiTopStories && apiTopStories.length > 0)
       ? apiTopStories
       : allStories;
@@ -440,7 +413,7 @@ export const ArticleDetail = ({
     return (pool || [])
       .filter((s) => s && s.id !== story.id && !String(s.id).startsWith('market-'))
       .slice(0, 6);
-  })();
+  }, [story?.id, apiTopStories, allStories]);
 
   // Automatically choose the richest, most detailed investigative article in the cluster
   const activeArticle = articles.reduce((best, cur) => {
@@ -572,6 +545,16 @@ export const ArticleDetail = ({
     }
 
     return false;
+  };
+
+  // Thumbnail helper: ensures clean HD photo and eliminates junk logos
+  const getStoryThumb = (item) => {
+    if (!item) return '';
+    const imgUrl = item.hero_image || item.image_url;
+    if (imgUrl && !isJunkOrLogoImage({ url: imgUrl })) {
+      return getHdImageUrl ? getHdImageUrl(imgUrl) : imgUrl;
+    }
+    return getCategoryFallbackImage ? getCategoryFallbackImage(item.category) : '';
   };
 
   const fallbackImg = getCategoryFallbackImage ? getCategoryFallbackImage(story.category) : '';
