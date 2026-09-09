@@ -295,7 +295,7 @@ def get_hero_story(category: Optional[str] = None):
             cursor.execute("SELECT * FROM stories WHERE status = 'published' ORDER BY last_updated_at DESC LIMIT 1")
             story = cursor.fetchone()
             
-            result = {"story": serialize_story(dict(story)) if story else None}
+        result = {"story": serialize_story(dict(story)) if story else None}
         set_in_cache(cache_key, result, ttl_seconds=45)
         return result
 

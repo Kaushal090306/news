@@ -32,40 +32,28 @@ const safeSet = (key, value) => {
   }
 };
 
-// FEEDS CACHE (Guarantees zero old news when opening after some time)
+// // FEEDS CACHE (Instant 0-delay authentic data on refresh and initial mount)
 export const getCachedFeeds = () => {
   const cached = safeGet(FEEDS_CACHE_KEY);
   
-  if (!cached || !Array.isArray(cached.stories) || cached.stories.length === 0) {
-    return {
-      stories: [],
-      heroStory: null,
-      breakingStories: [],
-      categoryStories: {},
-      availableDates: []
-    };
+  if (cached && Array.isArray(cached.stories) && cached.stories.length > 0) {
+    return cached;
   }
 
-  // Maximum age for showing cached news on initial mount: 25 minutes.
-  // If the user reopens the app after some time (> 25 mins), do NOT show old news!
-  const cacheAge = Date.now() - (cached.timestamp || 0);
-  const MAX_FEED_CACHE_AGE_MS = 25 * 60 * 1000;
-
-  if (cacheAge > MAX_FEED_CACHE_AGE_MS) {
-    try {
-      localStorage.removeItem(FEEDS_CACHE_KEY);
-    } catch (e) {}
-    return {
-      stories: [],
-      heroStory: null,
-      breakingStories: [],
-      categoryStories: {},
-      availableDates: []
-    };
+  // Check legacy fallback keys if v3 is not yet populated
+  const legacy = safeGet('world_news_feeds_cache_original') || safeGet('world_news_feeds_cache_v2');
+  if (legacy && Array.isArray(legacy.stories) && legacy.stories.length > 0) {
+    safeSet(FEEDS_CACHE_KEY, legacy);
+    return legacy;
   }
 
-  // Fresh authentic cache within the last 25 minutes (paints instantly in 0ms)
-  return cached;
+  return {
+    stories: [],
+    heroStory: null,
+    breakingStories: [],
+    categoryStories: {},
+    availableDates: []
+  };
 };
 
 export const setCachedFeeds = (data) => {
@@ -75,6 +63,18 @@ export const setCachedFeeds = (data) => {
     heroStory: data.heroStory || data.stories[0] || null,
     breakingStories: data.breakingStories || [],
     categoryStories: data.categoryStories || {},
+    timestamp: Date.now()
+  });
+};
+
+export const updateCachedFeeds = (partialData) => {
+  if (!partialData || typeof partialData !== 'object') return;
+  const current = safeGet(FEEDS_CACHE_KEY) || {};
+  safeSet(FEEDS_CACHE_KEY, {
+    stories: partialData.stories || current.stories || [],
+    heroStory: partialData.heroStory || current.heroStory || null,
+    breakingStories: partialData.breakingStories || current.breakingStories || [],
+    categoryStories: partialData.categoryStories || current.categoryStories || {},
     timestamp: Date.now()
   });
 };

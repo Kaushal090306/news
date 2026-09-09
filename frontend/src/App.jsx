@@ -15,6 +15,7 @@ import { api, getAuthToken, removeAuthToken, getCachedUser, setCachedUser } from
 import { 
   getCachedFeeds, 
   setCachedFeeds, 
+  updateCachedFeeds,
   getCachedStoryDetail, 
   setCachedStoryDetail 
 } from './services/cache';
@@ -240,65 +241,69 @@ export function App() {
     try {
       const countryParam = selectedCountry !== 'all' ? selectedCountry : undefined;
 
-      let freshStories = stories;
-      let freshHero = heroStory;
-      let freshBreaking = breakingStories;
-      let freshCategories = categoryStories;
+      // PRIORITY 1: Hero Story (Loads in ~50ms)
+      api.getHeroStory()
+        .then((res) => {
+          if (res?.story) {
+            setHeroStory(res.story);
+            updateCachedFeeds({ heroStory: res.story });
+          }
+        })
+        .catch((err) => console.warn('Hero load error:', err));
 
-      const syncCache = () => {
-        if (freshStories && freshStories.length > 0) {
-          setCachedFeeds({
-            stories: freshStories,
-            heroStory: freshHero || freshStories[0] || null,
-            breakingStories: freshBreaking,
-            categoryStories: freshCategories,
-            availableDates: availableDates
-          });
-        }
-      };
+      // PRIORITY 1: Breaking News Ticker (Loads in ~50ms)
+      api.getBreakingNews()
+        .then((res) => {
+          if (res?.breaking && res.breaking.length > 0) {
+            setBreakingStories(res.breaking);
+            updateCachedFeeds({ breakingStories: res.breaking });
+          }
+        })
+        .catch((err) => console.warn('Breaking load error:', err));
 
-      // 1. Fetch Main Stories with high-speed limit (100 is fast to transmit & render)
-      const pStories = api.getStories({
+      // PRIORITY 2: Top 25 Fresh Stories (Loads in ~100ms - populates Hero Slider, Top Developments, Trending)
+      api.getStories({
         country: countryParam,
         search: searchQuery || undefined,
-        limit: 100
-      }).then((res) => {
-        if (res && res.stories && res.stories.length > 0) {
-          freshStories = res.stories;
-          setStories(res.stories);
-          syncCache();
-        }
-      }).catch((err) => console.warn('Stories load error:', err));
+        limit: 25
+      })
+        .then((res) => {
+          if (res?.stories && res.stories.length > 0) {
+            setStories(res.stories);
+            updateCachedFeeds({ stories: res.stories });
 
-      // 2. Fetch Hero Story
-      const pHero = api.getHeroStory().then((res) => {
-        if (res && res.story) {
-          freshHero = res.story;
-          setHeroStory(res.story);
-          syncCache();
-        }
-      }).catch((err) => console.warn('Hero load error:', err));
+            // PRIORITY 4: Background backfill remaining stream stories (offset 25)
+            api.getStories({
+              country: countryParam,
+              search: searchQuery || undefined,
+              limit: 80,
+              offset: 25
+            })
+              .then((deepRes) => {
+                if (deepRes?.stories && deepRes.stories.length > 0) {
+                  setStories((prev) => {
+                    const existingIds = new Set(prev.map(s => s.id));
+                    const merged = [...prev, ...deepRes.stories.filter(s => !existingIds.has(s.id))];
+                    updateCachedFeeds({ stories: merged });
+                    return merged;
+                  });
+                }
+              })
+              .catch(() => {});
+          }
+        })
+        .catch((err) => console.warn('Stories load error:', err));
 
-      // 3. Fetch Breaking News
-      const pBreaking = api.getBreakingNews().then((res) => {
-        if (res && res.breaking) {
-          freshBreaking = res.breaking;
-          setBreakingStories(res.breaking);
-          syncCache();
-        }
-      }).catch((err) => console.warn('Breaking load error:', err));
+      // PRIORITY 3: Category Stories (Loads in ~150-200ms - populates Stock, Sport, Culture sections)
+      api.getStoriesByCategory(undefined, countryParam)
+        .then((res) => {
+          if (res?.categories) {
+            setCategoryStories(res.categories);
+            updateCachedFeeds({ categoryStories: res.categories });
+          }
+        })
+        .catch((err) => console.warn('Category stories load error:', err));
 
-      // 4. Fetch Category Stories
-      const pCategories = api.getStoriesByCategory(undefined, countryParam).then((res) => {
-        if (res && res.categories) {
-          freshCategories = res.categories;
-          setCategoryStories(res.categories);
-          syncCache();
-        }
-      }).catch((err) => console.warn('Category stories load error:', err));
-
-      await Promise.allSettled([pStories, pHero, pBreaking, pCategories]);
-      syncCache();
     } catch (err) {
       console.warn('Silent feed sync error:', err);
     }
