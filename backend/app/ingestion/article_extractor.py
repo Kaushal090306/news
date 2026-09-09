@@ -2,7 +2,11 @@ import re
 import json
 import time
 import threading
-import requests
+try:
+    import requests
+except ImportError:
+    requests = None
+import httpx
 from urllib.parse import urlparse, urljoin
 from bs4 import BeautifulSoup
 from app.ingestion.parsers import upgrade_image_url_to_hd
@@ -42,7 +46,10 @@ def extract_full_source_article(url: str, fallback_text: str = "", fallback_imag
 
     if url and url.startswith(('http://', 'https://')):
         try:
-            resp = requests.get(url, headers=headers, timeout=2.5)
+            if requests is not None:
+                resp = requests.get(url, headers=headers, timeout=2.5)
+            else:
+                resp = httpx.get(url, headers=headers, timeout=2.5, follow_redirects=True)
             if resp.status_code == 200 and resp.text:
                 soup = BeautifulSoup(resp.text, 'html.parser')
 
