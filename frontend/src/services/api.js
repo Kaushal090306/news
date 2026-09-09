@@ -31,6 +31,7 @@ const request = async (endpoint, options = {}) => {
   };
 
   const response = await fetch(`${API_BASE}${endpoint}`, {
+    cache: 'no-cache',
     ...options,
     headers,
   });

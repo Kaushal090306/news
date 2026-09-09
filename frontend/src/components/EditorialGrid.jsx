@@ -814,7 +814,13 @@ export const EditorialGrid = ({
             )}
           </div>
         ) : (
-          <div className="bbc-hero-poster-container" style={{ minHeight: 440 }} />
+          <div className="bbc-hero-poster-container" style={{ minHeight: 440, display: 'flex', alignItems: 'flex-end', padding: 24, background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)' }}>
+            <div style={{ width: '100%' }}>
+              <div style={{ width: 120, height: 14, background: 'rgba(255,255,255,0.2)', borderRadius: 3, marginBottom: 12 }} />
+              <div style={{ width: '75%', height: 28, background: 'rgba(255,255,255,0.3)', borderRadius: 4, marginBottom: 10 }} />
+              <div style={{ width: '55%', height: 14, background: 'rgba(255,255,255,0.15)', borderRadius: 3 }} />
+            </div>
+          </div>
         )}
 
         {/* Right Column: 4 Top Developments Stories with Small Image Thumbnails */}
@@ -824,36 +830,49 @@ export const EditorialGrid = ({
           </div>
 
           <div className="bbc-right-scroll-content">
-            {rightColumnStories.slice(0, 4).map((story, i) => {
-              const fallback = getCategoryFallbackImage(story.category, i, story.id);
-              const imgUrl = getHdImageUrl(story.hero_image) || fallback;
-              return (
-                <article
-                  key={story.id}
-                  className="bbc-top-dev-card"
-                  onClick={() => onSelectStory(story)}
-                >
+            {rightColumnStories.length === 0 ? (
+              [1, 2, 3, 4].map((n) => (
+                <div key={`skel-right-${n}`} className="bbc-top-dev-card" style={{ pointerEvents: 'none' }}>
                   <div className="bbc-top-dev-text">
-                    <h4 className="bbc-top-dev-title">{story.canonical_title}</h4>
-                    <p className="bbc-top-dev-snippet">{story.summary}</p>
-                    <div className="bbc-top-dev-meta">
-                      <span>{formatTimeAgo(story.last_updated_at)}</span>
-                      <span>|</span>
-                      <span>{story.category}</span>
+                    <div style={{ width: '85%', height: 14, background: '#e2e8f0', borderRadius: 3, marginBottom: 8 }} />
+                    <div style={{ width: '60%', height: 12, background: '#f1f5f9', borderRadius: 3, marginBottom: 8 }} />
+                    <div style={{ width: 70, height: 10, background: '#f8fafc', borderRadius: 2 }} />
+                  </div>
+                  <div className="bbc-top-dev-thumb-wrap" style={{ background: '#e2e8f0' }} />
+                </div>
+              ))
+            ) : (
+              rightColumnStories.slice(0, 4).map((story, i) => {
+                const fallback = getCategoryFallbackImage(story.category, i, story.id);
+                const imgUrl = getHdImageUrl(story.hero_image) || fallback;
+                return (
+                  <article
+                    key={story.id}
+                    className="bbc-top-dev-card"
+                    onClick={() => onSelectStory(story)}
+                  >
+                    <div className="bbc-top-dev-text">
+                      <h4 className="bbc-top-dev-title">{story.canonical_title}</h4>
+                      <p className="bbc-top-dev-snippet">{story.summary}</p>
+                      <div className="bbc-top-dev-meta">
+                        <span>{formatTimeAgo(story.last_updated_at)}</span>
+                        <span>|</span>
+                        <span>{story.category}</span>
+                      </div>
                     </div>
-                  </div>
-                  <div className="bbc-top-dev-thumb-wrap">
-                    <WireframeImage
-                      src={imgUrl}
-                      alt={story.canonical_title}
-                      className="bbc-top-dev-thumb"
-                      fallbackSrc={fallback}
-                      loading="eager"
-                    />
-                  </div>
-                </article>
-              );
-            })}
+                    <div className="bbc-top-dev-thumb-wrap">
+                      <WireframeImage
+                        src={imgUrl}
+                        alt={story.canonical_title}
+                        className="bbc-top-dev-thumb"
+                        fallbackSrc={fallback}
+                        loading="eager"
+                      />
+                    </div>
+                  </article>
+                );
+              })
+            )}
           </div>
         </div>
       </section>

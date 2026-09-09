@@ -1,13 +1,17 @@
-import seedFeeds from './seedFeeds.json';
-
 // Client-side instant persistent cache for Stale-While-Revalidate loading
-// Stores ONLY 100% authentic original data from the backend database/API.
-// Zero dummy or predefined data.
+// Stores ONLY 100% authentic live data from the backend database/API.
+// Zero old seed or predefined data.
 
-const FEEDS_CACHE_KEY = 'world_news_feeds_cache_original';
+const FEEDS_CACHE_KEY = 'world_news_feeds_cache_v3';
 const ARTICLE_CACHE_PREFIX = 'world_news_story_original_';
 const ADMIN_CACHE_KEY = 'world_news_admin_cache_original';
 const BOOKMARKS_CACHE_KEY = 'world_news_bookmarks_cache_original';
+
+// Clean legacy poisoned cache keys from previous versions
+try {
+  localStorage.removeItem('world_news_feeds_cache_original');
+  localStorage.removeItem('world_news_feeds_cache_v2');
+} catch (e) {}
 
 // Safe localStorage wrapper
 const safeGet = (key) => {
@@ -28,35 +32,40 @@ const safeSet = (key, value) => {
   }
 };
 
-// FEEDS CACHE (Instant 0-delay authentic data even on first-time/incognito visit)
+// FEEDS CACHE (Guarantees zero old news when opening after some time)
 export const getCachedFeeds = () => {
   const cached = safeGet(FEEDS_CACHE_KEY);
-  const seedTime = seedFeeds?.timestamp || 0;
   
-  // Stale threshold: 15 minutes. If cached data is older than 15 mins, prefer fresh seed
-  const isStale = !cached || !cached.timestamp || (Date.now() - cached.timestamp > 15 * 60 * 1000);
+  if (!cached || !Array.isArray(cached.stories) || cached.stories.length === 0) {
+    return {
+      stories: [],
+      heroStory: null,
+      breakingStories: [],
+      categoryStories: {},
+      availableDates: []
+    };
+  }
 
-  if (cached && Array.isArray(cached.stories) && cached.stories.length > 0 && !isStale) {
-    // If bundled seedFeeds is newer than cached data, upgrade cache immediately
-    if (seedTime && (!cached.timestamp || cached.timestamp < seedTime)) {
-      safeSet(FEEDS_CACHE_KEY, seedFeeds);
-      return seedFeeds;
-    }
-    return cached;
+  // Maximum age for showing cached news on initial mount: 25 minutes.
+  // If the user reopens the app after some time (> 25 mins), do NOT show old news!
+  const cacheAge = Date.now() - (cached.timestamp || 0);
+  const MAX_FEED_CACHE_AGE_MS = 25 * 60 * 1000;
+
+  if (cacheAge > MAX_FEED_CACHE_AGE_MS) {
+    try {
+      localStorage.removeItem(FEEDS_CACHE_KEY);
+    } catch (e) {}
+    return {
+      stories: [],
+      heroStory: null,
+      breakingStories: [],
+      categoryStories: {},
+      availableDates: []
+    };
   }
-  // FRESH VISIT / AFTER REFRESH / STALE CACHE:
-  // Return authentic fresh bundled seed data immediately with 0 microsecond delay
-  if (seedFeeds && Array.isArray(seedFeeds.stories) && seedFeeds.stories.length > 0) {
-    safeSet(FEEDS_CACHE_KEY, seedFeeds);
-    return seedFeeds;
-  }
-  return {
-    stories: [],
-    heroStory: null,
-    breakingStories: [],
-    categoryStories: {},
-    availableDates: []
-  };
+
+  // Fresh authentic cache within the last 25 minutes (paints instantly in 0ms)
+  return cached;
 };
 
 export const setCachedFeeds = (data) => {

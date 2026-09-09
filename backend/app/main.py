@@ -16,8 +16,8 @@ from app.api.newsletter import router as newsletter_router
 
 # Background periodic scheduler for feed ingestion
 async def periodic_ingestion_task():
-    # Wait 60 seconds after server startup before running background fetch
-    await asyncio.sleep(60)
+    # Quick 3 seconds delay after server startup before running background fetch
+    await asyncio.sleep(3)
     while True:
         try:
             print("[Scheduler] Starting periodic feed ingestion...")

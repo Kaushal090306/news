@@ -33,8 +33,13 @@ def set_in_cache(key: str, data: any, ttl_seconds: int = 60):
         }
 
 def clear_feed_cache():
+    global _GLOBAL_TRENDING_POOL, _GLOBAL_TOP_STORIES_POOL, _GLOBAL_TRENDING_TS
     with _CACHE_LOCK:
         _FEED_CACHE.clear()
+    with _GLOBAL_TRENDING_LOCK:
+        _GLOBAL_TRENDING_POOL = None
+        _GLOBAL_TOP_STORIES_POOL = None
+        _GLOBAL_TRENDING_TS = 0
 
 def serialize_story(story: dict) -> dict:
     if not story:

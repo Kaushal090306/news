@@ -207,55 +207,98 @@ export function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // Fetch feeds only on page load / page refresh, or when country or search explicitly changes
+  // Fetch feeds on page load / refresh, or when country or search explicitly changes
   useEffect(() => {
     loadFeedData(true);
+  }, [searchQuery, selectedCountry]);
+
+  // Auto-refresh when user switches back to the tab/app after some time
+  useEffect(() => {
+    let lastActiveTime = Date.now();
+    const handleReactivation = () => {
+      if (document.visibilityState === 'visible') {
+        const elapsedMinutes = (Date.now() - lastActiveTime) / (60 * 1000);
+        if (elapsedMinutes >= 5) {
+          lastActiveTime = Date.now();
+          loadFeedData(false);
+        }
+      } else {
+        lastActiveTime = Date.now();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleReactivation);
+    window.addEventListener('focus', handleReactivation);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleReactivation);
+      window.removeEventListener('focus', handleReactivation);
+    };
   }, [searchQuery, selectedCountry]);
 
   const loadFeedData = async (isInitialOrMajorChange = false) => {
     try {
       const countryParam = selectedCountry !== 'all' ? selectedCountry : undefined;
 
-      const [storiesRes, heroRes, breakingRes, catRes] = await Promise.all([
-        api.getStories({
-          country: countryParam,
-          search: searchQuery || undefined,
-          limit: 250
-        }),
-        api.getHeroStory(),
-        api.getBreakingNews(),
-        api.getStoriesByCategory(undefined, countryParam)
-      ]);
+      let freshStories = stories;
+      let freshHero = heroStory;
+      let freshBreaking = breakingStories;
+      let freshCategories = categoryStories;
 
-      let newStories = stories;
-      let newHero = heroStory;
-      let newBreaking = breakingStories;
-      let newCategories = categoryStories;
+      const syncCache = () => {
+        if (freshStories && freshStories.length > 0) {
+          setCachedFeeds({
+            stories: freshStories,
+            heroStory: freshHero || freshStories[0] || null,
+            breakingStories: freshBreaking,
+            categoryStories: freshCategories,
+            availableDates: availableDates
+          });
+        }
+      };
 
-      if (storiesRes && storiesRes.stories && storiesRes.stories.length > 0) {
-        newStories = storiesRes.stories;
-        setStories(newStories);
-      }
-      if (heroRes && heroRes.story) {
-        newHero = heroRes.story;
-        setHeroStory(newHero);
-      }
-      if (breakingRes && breakingRes.breaking) {
-        newBreaking = breakingRes.breaking;
-        setBreakingStories(newBreaking);
-      }
-      if (catRes && catRes.categories) {
-        newCategories = catRes.categories;
-        setCategoryStories(newCategories);
-      }
+      // 1. Fetch Main Stories with high-speed limit (100 is fast to transmit & render)
+      const pStories = api.getStories({
+        country: countryParam,
+        search: searchQuery || undefined,
+        limit: 100
+      }).then((res) => {
+        if (res && res.stories && res.stories.length > 0) {
+          freshStories = res.stories;
+          setStories(res.stories);
+          syncCache();
+        }
+      }).catch((err) => console.warn('Stories load error:', err));
 
-      setCachedFeeds({
-        stories: newStories,
-        heroStory: newHero,
-        breakingStories: newBreaking,
-        categoryStories: newCategories,
-        availableDates: availableDates
-      });
+      // 2. Fetch Hero Story
+      const pHero = api.getHeroStory().then((res) => {
+        if (res && res.story) {
+          freshHero = res.story;
+          setHeroStory(res.story);
+          syncCache();
+        }
+      }).catch((err) => console.warn('Hero load error:', err));
+
+      // 3. Fetch Breaking News
+      const pBreaking = api.getBreakingNews().then((res) => {
+        if (res && res.breaking) {
+          freshBreaking = res.breaking;
+          setBreakingStories(res.breaking);
+          syncCache();
+        }
+      }).catch((err) => console.warn('Breaking load error:', err));
+
+      // 4. Fetch Category Stories
+      const pCategories = api.getStoriesByCategory(undefined, countryParam).then((res) => {
+        if (res && res.categories) {
+          freshCategories = res.categories;
+          setCategoryStories(res.categories);
+          syncCache();
+        }
+      }).catch((err) => console.warn('Category stories load error:', err));
+
+      await Promise.allSettled([pStories, pHero, pBreaking, pCategories]);
+      syncCache();
     } catch (err) {
       console.warn('Silent feed sync error:', err);
     }
